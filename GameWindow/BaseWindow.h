@@ -30,8 +30,6 @@ protected:
 private:
 	WindowClass window;
 	void presentWindow();
-	static LRESULT CALLBACK ThisWindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-	LRESULT WindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	UINT16 numOfComponents;
 	IWindowComponent* components[MAX_WINDOW_COMPONENTS];
 };
