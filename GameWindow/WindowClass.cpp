@@ -31,7 +31,7 @@ static LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
-WindowClass::WindowClass() : title("GameWindow"), height(720), width(1280), windowStyle(DEFAULT_WINDOW_STYLE), windowStyleEx(DEFAULT_WINDOW_STYLE_EX), hwnd(NULL)
+WindowClass::WindowClass() : title("GameWindow"), windowStyle(DEFAULT_WINDOW_STYLE), windowStyleEx(DEFAULT_WINDOW_STYLE_EX), hwnd(NULL)
 {
 	std::cout << "WindowClass::WindowClass()" << std::endl;
 }
@@ -67,7 +67,7 @@ void WindowClass::createWindowInstance()
 
 	HINSTANCE instance = GetModuleHandle(NULL);
 
-	RECT windowRectangle = { 0, 0, width, height };
+	RECT windowRectangle = { 0, 0, display.getWidth(), display.getHeight() };
 	AdjustWindowRect(&windowRectangle, WS_OVERLAPPEDWINDOW, FALSE);
 
 	hwnd = CreateWindowEx(windowStyleEx, WINDOW_CLASS_NAME, title, windowStyle, CW_USEDEFAULT, CW_USEDEFAULT,

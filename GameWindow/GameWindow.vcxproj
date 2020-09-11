@@ -140,6 +140,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="BaseWindow.h" />
+    <ClInclude Include="DisplayDescriptor.h" />
     <ClInclude Include="Gamepad.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="IWindowComponent.h" />
@@ -148,6 +149,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BaseWindow.cpp" />
+    <ClCompile Include="DisplayDescriptor.cpp" />
     <ClCompile Include="Gamepad.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="Timer.cpp" />
