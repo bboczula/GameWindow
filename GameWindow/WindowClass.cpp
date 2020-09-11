@@ -10,7 +10,12 @@ static LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 	{
 	case WM_DESTROY:
 	{
+		// This function puts WM_QUIT message on top of the queue - a speciall message that causes GetMessage to return 0
 		PostQuitMessage(0);
+		break;
+	}
+	case WM_CLOSE:
+	{
 		break;
 	}
 	case WM_KILLFOCUS:
@@ -28,17 +33,17 @@ static LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 
 WindowClass::WindowClass() : title("GameWindow"), height(720), width(1280), windowStyle(DEFAULT_WINDOW_STYLE), windowStyleEx(DEFAULT_WINDOW_STYLE_EX), hwnd(NULL)
 {
-	std::cout << "WindowWin32::WindowWin32" << std::endl;
+	std::cout << "WindowClass::WindowClass()" << std::endl;
 }
 
 WindowClass::~WindowClass()
 {
-	std::cout << "WindowWin32::~WindowWin32()" << std::endl;
+	std::cout << "WindowClass::~WindowClass()" << std::endl;
 }
 
-void WindowClass::registerWindow()
+void WindowClass::registerWindowClass()
 {
-	std::cout << " WindowWin32::registerWindow()" << std::endl;
+	std::cout << " WindowClass::registerWindowClass()" << std::endl;
 
 	HINSTANCE instance = GetModuleHandle(NULL);
 
@@ -47,9 +52,7 @@ void WindowClass::registerWindow()
 	windowClass.cbSize = sizeof(WNDCLASSEX);
 	windowClass.lpszClassName = WINDOW_CLASS_NAME;
 	windowClass.lpfnWndProc = (WNDPROC)WindowProcedure;
-	windowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
 	windowClass.hInstance = instance;
-	windowClass.style = CS_VREDRAW | CS_HREDRAW | CS_OWNDC;
 
 
 	if (!RegisterClassEx(&windowClass))
@@ -58,9 +61,9 @@ void WindowClass::registerWindow()
 	}
 }
 
-void WindowClass::createWindow()
+void WindowClass::createWindowInstance()
 {
-	std::cout << " WindowWin32::createWindow()" << std::endl;
+	std::cout << " WindowClass::createWindowInstance()" << std::endl;
 
 	HINSTANCE instance = GetModuleHandle(NULL);
 
@@ -68,10 +71,15 @@ void WindowClass::createWindow()
 	AdjustWindowRect(&windowRectangle, WS_OVERLAPPEDWINDOW, FALSE);
 
 	hwnd = CreateWindowEx(windowStyleEx, WINDOW_CLASS_NAME, title, windowStyle, CW_USEDEFAULT, CW_USEDEFAULT,
-		windowRectangle.right - windowRectangle.left, windowRectangle.bottom - windowRectangle.top, NULL, NULL, instance, this);
+		windowRectangle.right - windowRectangle.left, windowRectangle.bottom - windowRectangle.top, NULL, NULL, instance, NULL);
 
 	if (hwnd == NULL)
 	{
 		std::cout << "ERROR: Window creation failed (" << GetLastError() << ")." << std::endl;
 	}
+}
+
+HWND WindowClass::getHwnd()
+{
+	return hwnd;
 }

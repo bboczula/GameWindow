@@ -22,14 +22,12 @@ protected:
 	CHAR title[MAX_TITLE_LENGTH];
 	const UINT16 width;
 	const UINT16 height;
-	HWND hWindow;
 	HINSTANCE instance;
 	virtual void initialize();
 	virtual void update();
 	virtual void render();
 private:
 	WindowClass window;
-	void presentWindow();
 	UINT16 numOfComponents;
 	IWindowComponent* components[MAX_WINDOW_COMPONENTS];
 };

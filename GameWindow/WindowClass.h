@@ -10,8 +10,9 @@ class WindowClass
 public:
 	WindowClass();
 	~WindowClass();
-	void registerWindow();
-	void createWindow();
+	void registerWindowClass();
+	void createWindowInstance();
+	HWND getHwnd();
 private:
 	HWND hwnd;
 	int width;

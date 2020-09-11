@@ -6,20 +6,13 @@
 #define LOG(s) std::cout << s << std::endl
 #endif // !LOG
 
-BaseWindow::BaseWindow(const char* title, int width, int height) : title(), width(width), height(height), hWindow(NULL), instance(GetModuleHandle(NULL))
+BaseWindow::BaseWindow(const char* title, int width, int height) : title(), width(width), height(height), instance(GetModuleHandle(NULL))
 {
 	// Here you need to initialize your char arrach
 	LOG("BaseWindow::BaseWindow()");
 	strcpy_s(this->title, title);
-	window.registerWindow();
-	window.createWindow();
-	presentWindow();
-}
-
-void BaseWindow::presentWindow()
-{
-	ShowWindow(hWindow, SW_SHOW);
-	UpdateWindow(hWindow);
+	window.registerWindowClass();
+	window.createWindowInstance();
 }
 
 BaseWindow::~BaseWindow()
@@ -29,6 +22,8 @@ BaseWindow::~BaseWindow()
 
 void BaseWindow::start()
 {
+	LOG("BaseWindow::start()");
+
 	for (int i = 0; i < numOfComponents; i++)
 	{
 		components[i]->initialize();
@@ -36,21 +31,35 @@ void BaseWindow::start()
 
 	MSG message{ 0 };
 	initialize();
+
+	// For each thread that creates the window, the OS creates a queue for window messages.
+	// This queue holds messages  for all windows that are created on that thread.
 	while (message.message != WM_QUIT)
 	{
-		while (PeekMessage(&message, NULL, 0, 0, PM_REMOVE))
+		// If HWND parameter is NULL, then function retrieves messages for any window that belongs to current thread,
+		// so both window messages and thread messages.
+		bool isMessageAvailable = PeekMessage(&message, NULL, 0, 0, PM_REMOVE);
+		if (isMessageAvailable)
 		{
+			// This function translates keystrokes into characters.
 			TranslateMessage(&message);
+
+			// This function tells OS to call Window Procedure
 			DispatchMessage(&message);
 		}
+		else
+		{
+			update();
+			render();
+		}
 
-		update();
-		render();
 		for (int i = 0; i < numOfComponents; i++)
 		{
 			components[i]->postFrame();
 		}
 	}
+
+	LOG("BaseWindow::start() - finished");
 }
 
 void BaseWindow::add(IWindowComponent* component)
