@@ -33,14 +33,12 @@ void WindowClass::registerWindowClass()
 {
 	std::cout << " WindowClass::registerWindowClass()" << std::endl;
 
-	HINSTANCE instance = GetModuleHandle(NULL);
-
 	WNDCLASSEX windowClass;
 	ZeroMemory(&windowClass, sizeof(WNDCLASSEX));
 	windowClass.cbSize = sizeof(WNDCLASSEX);
 	windowClass.lpszClassName = WINDOW_CLASS_NAME;
 	windowClass.lpfnWndProc = (WNDPROC)WindowProcedure;
-	windowClass.hInstance = instance;
+	windowClass.hInstance = GetModuleHandle(NULL);
 
 
 	if (!RegisterClassEx(&windowClass))
@@ -53,13 +51,11 @@ void WindowClass::createWindowInstance()
 {
 	std::cout << " WindowClass::createWindowInstance()" << std::endl;
 
-	HINSTANCE instance = GetModuleHandle(NULL);
-
 	RECT windowRectangle = { 0, 0, display.getWidth(), display.getHeight() };
 	AdjustWindowRect(&windowRectangle, WS_OVERLAPPEDWINDOW, FALSE);
 
 	hwnd = CreateWindowEx(windowStyleEx, WINDOW_CLASS_NAME, title, windowStyle, CW_USEDEFAULT, CW_USEDEFAULT,
-		windowRectangle.right - windowRectangle.left, windowRectangle.bottom - windowRectangle.top, NULL, NULL, instance, NULL);
+		windowRectangle.right - windowRectangle.left, windowRectangle.bottom - windowRectangle.top, NULL, NULL, GetModuleHandle(NULL), NULL);
 
 	if (hwnd == NULL)
 	{
