@@ -14,18 +14,6 @@ static LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 		PostQuitMessage(0);
 		break;
 	}
-	case WM_CLOSE:
-	{
-		break;
-	}
-	case WM_KILLFOCUS:
-	{
-		break;
-	}
-	case WM_SETFOCUS:
-	{
-		break;
-	}
 	}
 
 	return DefWindowProc(hwnd, msg, wParam, lParam);
