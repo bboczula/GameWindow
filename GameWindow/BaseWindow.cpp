@@ -6,50 +6,14 @@
 #define LOG(s) std::cout << s << std::endl
 #endif // !LOG
 
-#define WINDOW_CLASS_NAME "MyMainBaseWindowClass"
-#define DEFAULT_WINDOW_STYLE WS_VISIBLE | WS_CLIPCHILDREN | WS_OVERLAPPED  | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX
-#define DEFAULT_WINDOW_STYLE_EX WS_EX_APPWINDOW | WS_EX_CLIENTEDGE
-
-BaseWindow::BaseWindow(const char* title, int width, int height) : title(), width(width), height(height), hWindow(NULL), instance(GetModuleHandle(NULL)),
-windowStyle(DEFAULT_WINDOW_STYLE), windowStyleEx(DEFAULT_WINDOW_STYLE_EX)
+BaseWindow::BaseWindow(const char* title, int width, int height) : title(), width(width), height(height), hWindow(NULL), instance(GetModuleHandle(NULL))
 {
 	// Here you need to initialize your char arrach
+	LOG("BaseWindow::BaseWindow");
 	strcpy_s(this->title, title);
-	registerWindow();
-	createWindow();
+	window.registerWindow();
+	window.createWindow();
 	presentWindow();
-}
-
-void BaseWindow::registerWindow()
-{
-	WNDCLASSEX windowClass;
-	ZeroMemory(&windowClass, sizeof(WNDCLASSEX));
-	windowClass.cbSize = sizeof(WNDCLASSEX);
-	windowClass.lpszClassName = WINDOW_CLASS_NAME;
-	windowClass.lpfnWndProc = BaseWindow::ThisWindowProcedure;
-	windowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
-	windowClass.hInstance = instance;
-	windowClass.style = CS_VREDRAW | CS_HREDRAW | CS_OWNDC;
-
-
-	if (!RegisterClassEx(&windowClass))
-	{
-		LOG("ERROR: Window Class registration failed.");
-	}
-}
-
-void BaseWindow::createWindow()
-{
-	RECT windowRectangle = { 0, 0, width, height };
-	AdjustWindowRect(&windowRectangle, WS_OVERLAPPEDWINDOW, FALSE);
-
-	hWindow = CreateWindowEx(windowStyleEx, WINDOW_CLASS_NAME, title, windowStyle, CW_USEDEFAULT, CW_USEDEFAULT,
-		windowRectangle.right - windowRectangle.left, windowRectangle.bottom - windowRectangle.top, NULL, NULL, instance, this);
-
-	if (hWindow == NULL)
-	{
-		LOG("ERROR: Window creation failed (" << GetLastError() << ").");
-	}
 }
 
 void BaseWindow::presentWindow()
