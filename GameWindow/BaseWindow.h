@@ -19,6 +19,7 @@ public:
 	void start();
 	void add(IWindowComponent* component);
 protected:
+	WindowClass window;
 	CHAR title[MAX_TITLE_LENGTH];
 	const UINT16 width;
 	const UINT16 height;
@@ -26,7 +27,6 @@ protected:
 	virtual void initialize();
 	virtual void tick();
 private:
-	WindowClass window;
 	UINT16 numOfComponents;
 	IWindowComponent* components[MAX_WINDOW_COMPONENTS];
 };

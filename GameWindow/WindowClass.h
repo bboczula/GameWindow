@@ -14,6 +14,8 @@ public:
 	void registerWindowClass();
 	void createWindowInstance();
 	HWND getHwnd();
+	LONG getWidth();
+	LONG getHeight();
 private:
 	HWND hwnd;
 	DisplayDescriptor display;

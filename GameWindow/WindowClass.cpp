@@ -67,3 +67,13 @@ HWND WindowClass::getHwnd()
 {
 	return hwnd;
 }
+
+LONG WindowClass::getWidth()
+{
+	return display.getWidth();
+}
+
+LONG WindowClass::getHeight()
+{
+	return display.getHeight();
+}
