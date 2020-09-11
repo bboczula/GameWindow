@@ -49,8 +49,7 @@ void BaseWindow::start()
 		}
 		else
 		{
-			update();
-			render();
+			tick();
 		}
 
 		for (int i = 0; i < numOfComponents; i++)
@@ -71,10 +70,6 @@ void BaseWindow::initialize()
 {
 }
 
-void BaseWindow::update()
-{
-}
-
-void BaseWindow::render()
+void BaseWindow::tick()
 {
 }

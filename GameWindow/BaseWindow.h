@@ -24,8 +24,7 @@ protected:
 	const UINT16 height;
 	HINSTANCE instance;
 	virtual void initialize();
-	virtual void update();
-	virtual void render();
+	virtual void tick();
 private:
 	WindowClass window;
 	UINT16 numOfComponents;

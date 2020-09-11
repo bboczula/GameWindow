@@ -8,6 +8,5 @@ public:
     Application();
     ~Application();
     void initialize() override;
-    void update() override;
-    void render() override;
+    void tick() override;
 };

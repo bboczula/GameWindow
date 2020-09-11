@@ -12,10 +12,6 @@ void Application::initialize()
 {
 }
 
-void Application::update()
-{
-}
-
-void Application::render()
+void Application::tick()
 {
 }
