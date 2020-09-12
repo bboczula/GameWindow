@@ -163,6 +163,9 @@
     <ClInclude Include="Application.h" />
     <ClInclude Include="d3dx12.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="shaders.hlsl" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

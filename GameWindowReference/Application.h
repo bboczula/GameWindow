@@ -2,6 +2,7 @@
 
 #include <d3d12.h>
 #include <dxgi1_4.h>
+#include <d3dcompiler.h>
 #include <iostream>
 #include <vector>
 
@@ -10,6 +11,7 @@
 
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
+#pragma comment(lib, "D3DCompiler.lib")
 
 #define FRAME_COUNT 2
 
@@ -32,6 +34,7 @@ private:
     ID3D12Resource* renderTargets[FRAME_COUNT];
     ID3D12CommandAllocator* commandAllocator;
     ID3D12RootSignature* rootSignature;
+    ID3D12PipelineState* pipelineState;
     void createDxgiFactory();
     void enumerateAdapters();
     void createDevice();
@@ -41,4 +44,5 @@ private:
     void createFrameResources();
     void createCommandAllocator();
     void createEmptyRootSignature();
+    void createPipelineState();
 };
