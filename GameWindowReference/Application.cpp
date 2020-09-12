@@ -218,5 +218,6 @@ void Application::createCommandList()
     std::cout << " Application::createCommandList()" << std::endl;
 
     ThrowIfFailed(primaryDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator, pipelineState, IID_PPV_ARGS(&commandList)));
+    ThrowIfFailed(commandList->Close());
 }
 
