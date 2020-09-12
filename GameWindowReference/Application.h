@@ -5,6 +5,7 @@
 #include <d3dcompiler.h>
 #include <iostream>
 #include <vector>
+#include <DirectXMath.h>
 
 #include "d3dx12.h"
 #include "BaseWindow.h"
@@ -14,6 +15,12 @@
 #pragma comment(lib, "D3DCompiler.lib")
 
 #define FRAME_COUNT 2
+
+struct Vertex
+{
+    DirectX::XMFLOAT3 position;
+    DirectX::XMFLOAT4 color;
+};
 
 class Application : public BaseWindow
 {
@@ -36,6 +43,8 @@ private:
     ID3D12RootSignature* rootSignature;
     ID3D12PipelineState* pipelineState;
     ID3D12GraphicsCommandList* commandList;
+    ID3D12Resource* vertexBuffer;
+    D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
     void createDxgiFactory();
     void enumerateAdapters();
     void createDevice();
@@ -47,4 +56,5 @@ private:
     void createEmptyRootSignature();
     void createPipelineState();
     void createCommandList();
+    void createVertexBuffer();
 };
