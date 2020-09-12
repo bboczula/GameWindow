@@ -48,6 +48,8 @@ private:
     HANDLE fenceEvent;
     ID3D12Fence* fence;
     UINT64 fenceValue;
+    D3D12_VIEWPORT viewport;
+    D3D12_RECT scissorRect;
     void createDxgiFactory();
     void enumerateAdapters();
     void createDevice();
@@ -62,4 +64,5 @@ private:
     void createVertexBuffer();
     void createSyncObjects();
     void waitForPreviousFrame();
+    void populateCommandList();
 };
