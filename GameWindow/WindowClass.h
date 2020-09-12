@@ -18,7 +18,7 @@ public:
 	LONG getHeight();
 private:
 	HWND hwnd;
-	DisplayDescriptor display;
+	Astral::DisplayDescriptor display;
 	const LONG windowStyleEx;
 	const LONG windowStyle;
 	CHAR title[MAX_TITLE_LENGTH];

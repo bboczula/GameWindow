@@ -1,21 +1,21 @@
 #include "DisplayDescriptor.h"
 
-DisplayDescriptor::DisplayDescriptor() : width(1280), height(720)
+Astral::DisplayDescriptor::DisplayDescriptor() : width(1280), height(720)
 {
 	std::cout << "DisplayDescriptor::DisplayDescriptor()" << std::endl;
 }
 
-DisplayDescriptor::~DisplayDescriptor()
+Astral::DisplayDescriptor::~DisplayDescriptor()
 {
 	std::cout << "DisplayDescriptor::~DisplayDescriptor()" << std::endl;
 }
 
-LONG DisplayDescriptor::getWidth()
+LONG Astral::DisplayDescriptor::getWidth()
 {
 	return width;
 }
 
-LONG DisplayDescriptor::getHeight()
+LONG Astral::DisplayDescriptor::getHeight()
 {
 	return height;
 }

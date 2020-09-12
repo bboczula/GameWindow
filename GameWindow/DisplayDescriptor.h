@@ -3,14 +3,17 @@
 #include <Windows.h>
 #include <iostream>
 
-class DisplayDescriptor
+namespace Astral
 {
-public:
-	DisplayDescriptor();
-	~DisplayDescriptor();
-	LONG getWidth();
-	LONG getHeight();
-private:
-	LONG width;
-	LONG height;
-};
+	class DisplayDescriptor
+	{
+	public:
+		DisplayDescriptor();
+		~DisplayDescriptor();
+		LONG getWidth();
+		LONG getHeight();
+	private:
+		LONG width;
+		LONG height;
+	};
+}
