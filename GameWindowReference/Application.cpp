@@ -35,6 +35,7 @@ void Application::initialize()
     createPipelineState();
     createCommandList();
     createVertexBuffer();
+    createSyncObjects();
 }
 
 void Application::tick()
@@ -260,5 +261,46 @@ void Application::createVertexBuffer()
     vertexBufferView.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
     vertexBufferView.StrideInBytes = sizeof(Vertex);
     vertexBufferView.SizeInBytes = vertexBufferSize;
+}
+
+void Application::createSyncObjects()
+{
+    std::cout << " Application::createSyncObjects()" << std::endl;
+
+    ThrowIfFailed(primaryDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
+    fenceValue = 1;
+
+    // Create an event handle to use for frame synchronization.
+    fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    if (fenceEvent == nullptr)
+    {
+        ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
+    }
+
+    // Wait for the command list to execute; we are reusing the same command 
+    // list in our main loop but for now, we just want to wait for setup to 
+    // complete before continuing.
+    waitForPreviousFrame();
+}
+
+void Application::waitForPreviousFrame()
+{
+    // WAITING FOR THE FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
+    // This is code implemented as such for simplicity. More advanced samples 
+    // illustrate how to use fences for efficient resource usage.
+
+    // Signal and increment the fence value.
+    const UINT64 fenceTemp = fenceValue;
+    ThrowIfFailed(commandQueue->Signal(fence, fenceTemp));
+    fenceValue++;
+
+    // Wait until the previous frame is finished.
+    if (fence->GetCompletedValue() < fenceTemp)
+    {
+        ThrowIfFailed(fence->SetEventOnCompletion(fenceTemp, fenceEvent));
+        WaitForSingleObject(fenceEvent, INFINITE);
+    }
+
+    frameIndex = swapChain->GetCurrentBackBufferIndex();
 }
 

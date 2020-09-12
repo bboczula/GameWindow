@@ -45,6 +45,9 @@ private:
     ID3D12GraphicsCommandList* commandList;
     ID3D12Resource* vertexBuffer;
     D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
+    HANDLE fenceEvent;
+    ID3D12Fence* fence;
+    UINT64 fenceValue;
     void createDxgiFactory();
     void enumerateAdapters();
     void createDevice();
@@ -57,4 +60,6 @@ private:
     void createPipelineState();
     void createCommandList();
     void createVertexBuffer();
+    void createSyncObjects();
+    void waitForPreviousFrame();
 };
