@@ -31,6 +31,7 @@ private:
     UINT rtvDescriptorSize;
     ID3D12Resource* renderTargets[FRAME_COUNT];
     ID3D12CommandAllocator* commandAllocator;
+    ID3D12RootSignature* rootSignature;
     void createDxgiFactory();
     void enumerateAdapters();
     void createDevice();
@@ -39,4 +40,5 @@ private:
     void createDescriptorHeaps();
     void createFrameResources();
     void createCommandAllocator();
+    void createEmptyRootSignature();
 };
