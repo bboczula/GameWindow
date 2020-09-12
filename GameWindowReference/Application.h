@@ -35,6 +35,7 @@ private:
     ID3D12CommandAllocator* commandAllocator;
     ID3D12RootSignature* rootSignature;
     ID3D12PipelineState* pipelineState;
+    ID3D12GraphicsCommandList* commandList;
     void createDxgiFactory();
     void enumerateAdapters();
     void createDevice();
@@ -45,4 +46,5 @@ private:
     void createCommandAllocator();
     void createEmptyRootSignature();
     void createPipelineState();
+    void createCommandList();
 };

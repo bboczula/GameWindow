@@ -33,6 +33,7 @@ void Application::initialize()
     createCommandAllocator();
     createEmptyRootSignature();
     createPipelineState();
+    createCommandList();
 }
 
 void Application::tick()
@@ -210,5 +211,12 @@ void Application::createPipelineState()
     psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
     psoDesc.SampleDesc.Count = 1;
     ThrowIfFailed(primaryDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState)));
+}
+
+void Application::createCommandList()
+{
+    std::cout << " Application::createCommandList()" << std::endl;
+
+    ThrowIfFailed(primaryDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator, pipelineState, IID_PPV_ARGS(&commandList)));
 }
 
