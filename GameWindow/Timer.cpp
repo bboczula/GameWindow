@@ -1,23 +1,17 @@
 #include "Timer.h"
 
-void Timer::initialize()
+void Timer::start()
 {
-	QueryPerformanceFrequency((LARGE_INTEGER*)&Frequency);
-	QueryPerformanceCounter((LARGE_INTEGER*)&previousTimeStamp);
+	QueryPerformanceFrequency(&frequency);
+	QueryPerformanceCounter(&startTimestamp);
 }
 
-void Timer::handle(UINT msg, WPARAM wParam, LPARAM lParam)
+void Timer::stop()
 {
+	QueryPerformanceCounter(&stopTimestamp);
 }
 
-void Timer::postFrame()
+float Timer::getElapsedTime()
 {
-	QueryPerformanceCounter((LARGE_INTEGER*)&currentTimeStamp);
-	deltaTimeStamp = currentTimeStamp - previousTimeStamp;
-	previousTimeStamp = currentTimeStamp;
-}
-
-float Timer::getDeltaTime()
-{
-	return (float)((deltaTimeStamp) / (float)Frequency) * 1000.0f;
+	return (float)(((double)(stopTimestamp.QuadPart - startTimestamp.QuadPart)) / ((double)frequency.QuadPart));;
 }

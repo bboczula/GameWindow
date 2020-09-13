@@ -4,10 +4,11 @@
 #include <Windows.h>
 #include <windowsx.h>
 #include <stdint.h>
-#include "WindowClass.h"
-typedef uint64_t QWORD;
+#include <string>
 
+#include "WindowClass.h"
 #include "IWindowComponent.h"
+#include "Timer.h"
 
 #define MAX_WINDOW_COMPONENTS 2
 
@@ -20,6 +21,7 @@ public:
 	void add(IWindowComponent* component);
 protected:
 	WindowClass window;
+	Timer timer;
 	CHAR title[MAX_TITLE_LENGTH];
 	const UINT16 width;
 	const UINT16 height;

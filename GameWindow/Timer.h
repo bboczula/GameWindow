@@ -5,15 +5,14 @@
 
 #include "IWindowComponent.h"
 
-class Timer : public IWindowComponent
+class Timer
 {
 public:
-	void initialize() override;
-	void handle(UINT msg, WPARAM wParam, LPARAM lParam) override;
-	void postFrame() override;
-	float getDeltaTime();
+	void start();
+	void stop();
+	float getElapsedTime();
 private:
-	__int64 StartingTime, EndingTime, ElapsedMicroseconds;
-	__int64 previousTimeStamp, currentTimeStamp, deltaTimeStamp;
-	__int64 Frequency;
+	LARGE_INTEGER startTimestamp;
+	LARGE_INTEGER stopTimestamp;
+	LARGE_INTEGER frequency;
 };

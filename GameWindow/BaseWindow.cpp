@@ -36,6 +36,7 @@ void BaseWindow::start()
 	// This queue holds messages  for all windows that are created on that thread.
 	while (message.message != WM_QUIT)
 	{
+		timer.start();
 		// If HWND parameter is NULL, then function retrieves messages for any window that belongs to current thread,
 		// so both window messages and thread messages.
 		bool isMessageAvailable = PeekMessage(&message, NULL, 0, 0, PM_REMOVE);
@@ -56,6 +57,7 @@ void BaseWindow::start()
 		{
 			components[i]->postFrame();
 		}
+		timer.stop();
 	}
 
 	LOG("BaseWindow::start() - finished");
