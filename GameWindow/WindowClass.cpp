@@ -8,6 +8,13 @@ static LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 {
 	switch (msg)
 	{
+	case WM_CLOSE:
+	{
+		// This function sends WM_DESTROY and WM_NCDESTROY messages to the window and removes keyboard focus from it
+		// Also it fushes the thread message queue, destroys timers, remove clipboard ownership and breaks clipboard viewer chain
+		DestroyWindow(hwnd);
+		break;
+	}
 	case WM_DESTROY:
 	{
 		// This function puts WM_QUIT message on top of the queue - a speciall message that causes GetMessage to return 0
@@ -54,8 +61,11 @@ void WindowClass::createWindowInstance()
 	RECT windowRectangle = { 0, 0, display.getWidth(), display.getHeight() };
 	AdjustWindowRect(&windowRectangle, WS_OVERLAPPEDWINDOW, FALSE);
 
-	hwnd = CreateWindowEx(windowStyleEx, WINDOW_CLASS_NAME, title, windowStyle, CW_USEDEFAULT, CW_USEDEFAULT,
-		windowRectangle.right - windowRectangle.left, windowRectangle.bottom - windowRectangle.top, NULL, NULL, GetModuleHandle(NULL), NULL);
+	INT startPositionX = CW_USEDEFAULT;
+	INT startPositionY = CW_USEDEFAULT;
+
+	hwnd = CreateWindowEx(windowStyleEx, WINDOW_CLASS_NAME, title, windowStyle, startPositionX, startPositionY,
+		windowRectangle.right, windowRectangle.bottom, NULL, NULL, GetModuleHandle(NULL), NULL);
 
 	if (hwnd == NULL)
 	{
