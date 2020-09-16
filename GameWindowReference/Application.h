@@ -9,6 +9,7 @@
 
 #include "d3dx12.h"
 #include "BaseWindow.h"
+#include "DxgiManager.h"
 
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -30,11 +31,9 @@ public:
     void initialize() override;
     void tick() override;
 private:
+    DxgiManager dxgiManager;
     ID3D12Device* primaryDevice;
-    IDXGIFactory4* dxgiFactory;
     ID3D12CommandQueue* commandQueue;
-    std::vector<IDXGIAdapter1*> hardwareAdapters;
-    IDXGISwapChain3* swapChain;
     UINT frameIndex;
     ID3D12DescriptorHeap* rtvHeap;
     UINT rtvDescriptorSize;
@@ -50,11 +49,8 @@ private:
     UINT64 fenceValue;
     D3D12_VIEWPORT viewport;
     D3D12_RECT scissorRect;
-    void createDxgiFactory();
-    void enumerateAdapters();
     void createDevice();
     void createCommandQueue();
-    void createSwapChain();
     void createDescriptorHeaps();
     void createFrameResources();
     void createCommandAllocator();

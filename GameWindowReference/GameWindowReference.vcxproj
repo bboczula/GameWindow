@@ -152,6 +152,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="DxgiManager.cpp" />
     <ClCompile Include="GameWindowReference.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -162,6 +163,8 @@
   <ItemGroup>
     <ClInclude Include="Application.h" />
     <ClInclude Include="d3dx12.h" />
+    <ClInclude Include="DxgiManager.h" />
+    <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders.hlsl" />

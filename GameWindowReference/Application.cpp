@@ -1,14 +1,5 @@
 #include "Application.h"
 
-inline void ThrowIfFailed(HRESULT hr)
-{
-    if (FAILED(hr))
-    {
-        // Set a breakpoint on this line to catch DirectX API errors
-        throw std::exception();
-    }
-}
-
 Application::Application() : BaseWindow("GamePerformanceStudies", 1280, 720)
 {
     std::cout << "Application::Application()" << std::endl;
@@ -23,11 +14,12 @@ void Application::initialize()
 {
     std::cout << " Application::initialize()" << std::endl;
 
-    createDxgiFactory();
-    enumerateAdapters();
+    dxgiManager.createDxgiFactory();
+    dxgiManager.enumerateAdapters();
     createDevice();
     createCommandQueue();
-    createSwapChain();
+    dxgiManager.createSwapChain(commandQueue, FRAME_COUNT, window.getWidth(), window.getHeight(), window.getHwnd());
+    frameIndex = dxgiManager.getCurrentBackBufferIndex();
     createDescriptorHeaps();
     createFrameResources();
     createCommandAllocator();
@@ -48,51 +40,16 @@ void Application::tick()
     commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
     // Present the frame.
-    ThrowIfFailed(swapChain->Present(1, 0));
+    dxgiManager.present();
 
     waitForPreviousFrame();
-}
-
-void Application::createDxgiFactory()
-{
-    std::cout << " Application::createDxgiFactory()" << std::endl;
-
-    UINT flags = 0;
-#ifdef DEBUG
-    flags |= DXGI_CREATE_FACTORY_DEBUG;
-#endif // DEBUG
-    ThrowIfFailed(CreateDXGIFactory2(flags, IID_PPV_ARGS(&dxgiFactory)));
-}
-
-void Application::enumerateAdapters()
-{
-    std::cout << " Application::enumerateAdapters()" << std::endl;
-
-    IDXGIAdapter1* hardwareAdapter;
-    int i = 0;
-    while ((DXGI_ERROR_NOT_FOUND != dxgiFactory->EnumAdapters1(i, &hardwareAdapter)))
-    {
-        DXGI_ADAPTER_DESC1 adapterDescriptor;
-        hardwareAdapter->GetDesc1(&adapterDescriptor);
-
-        // This basically means "if this is a hardware adapter"
-        if (((adapterDescriptor.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0) && (adapterDescriptor.VendorId != 5140))
-        {
-            std::wcout << "  " << i << ". " << adapterDescriptor.Description << std::endl;
-            hardwareAdapters.push_back(hardwareAdapter);
-    }
-
-        i++;
-
-        // hardwareAdapter->Release();
-}
 }
 
 void Application::createDevice()
 {
     std::cout << " Application::createDevice()" << std::endl;
 
-    ThrowIfFailed(D3D12CreateDevice(hardwareAdapters[0], D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&primaryDevice)));
+    ThrowIfFailed(D3D12CreateDevice(dxgiManager.getPrimaryAdapter(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&primaryDevice)));
 }
 
 void Application::createCommandQueue()
@@ -105,34 +62,6 @@ void Application::createCommandQueue()
 
     ThrowIfFailed(primaryDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueue)));
 
-}
-
-void Application::createSwapChain()
-{
-    std::cout << " Application::createSwapChain()" << std::endl;
-
-    // Describe and create the swap chain.
-    DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
-    swapChainDesc.BufferCount = FRAME_COUNT;
-    swapChainDesc.BufferDesc.Width = window.getWidth();
-    swapChainDesc.BufferDesc.Height = window.getHeight();
-    swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-    swapChainDesc.OutputWindow = window.getHwnd();
-    swapChainDesc.SampleDesc.Count = 1;
-    swapChainDesc.Windowed = TRUE;
-
-    IDXGISwapChain* swapChainTemp;
-    ThrowIfFailed(dxgiFactory->CreateSwapChain(commandQueue, &swapChainDesc, &swapChainTemp));
-
-    // Upgrade to SwapChain3
-    ThrowIfFailed(swapChainTemp->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&swapChain));
-
-    // This sample does not support fullscreen transitions.
-    ThrowIfFailed(dxgiFactory->MakeWindowAssociation(window.getHwnd(), DXGI_MWA_NO_ALT_ENTER));
-
-    frameIndex = swapChain->GetCurrentBackBufferIndex();
 }
 
 void Application::createDescriptorHeaps()
@@ -158,7 +87,7 @@ void Application::createFrameResources()
     // Create a RTV for each frame.
     for (UINT n = 0; n < FRAME_COUNT; n++)
     {
-        ThrowIfFailed(swapChain->GetBuffer(n, IID_PPV_ARGS(&renderTargets[n])));
+        ThrowIfFailed(dxgiManager.getSwapChain()->GetBuffer(n, IID_PPV_ARGS(&renderTargets[n])));
         primaryDevice->CreateRenderTargetView(renderTargets[n], nullptr, rtvHandle);
         rtvHandle.Offset(1, rtvDescriptorSize);
     }
@@ -313,7 +242,7 @@ void Application::waitForPreviousFrame()
         WaitForSingleObject(fenceEvent, INFINITE);
     }
 
-    frameIndex = swapChain->GetCurrentBackBufferIndex();
+    frameIndex = dxgiManager.getCurrentBackBufferIndex();
 }
 
 void Application::populateCommandList()
