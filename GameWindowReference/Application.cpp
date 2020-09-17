@@ -19,7 +19,7 @@ void Application::initialize()
     createDevice();
     createCommandQueue();
     dxgiManager.createSwapChain(commandQueue, FRAME_COUNT, window.getWidth(), window.getHeight(), window.getHwnd());
-    frameIndex = dxgiManager.getCurrentBackBufferIndex();
+
     createDescriptorHeaps();
     createFrameResources();
     createCommandAllocator();
@@ -241,8 +241,6 @@ void Application::waitForPreviousFrame()
         ThrowIfFailed(fence->SetEventOnCompletion(fenceTemp, fenceEvent));
         WaitForSingleObject(fenceEvent, INFINITE);
     }
-
-    frameIndex = dxgiManager.getCurrentBackBufferIndex();
 }
 
 void Application::populateCommandList()
@@ -267,9 +265,10 @@ void Application::populateCommandList()
     commandList->RSSetScissorRects(1, &scissorRect);
 
     // Indicate that the back buffer will be used as a render target.
-    commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+    commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[dxgiManager.getCurrentBackBufferIndex()],
+        D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart(), frameIndex, rtvDescriptorSize);
+    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart(), dxgiManager.getCurrentBackBufferIndex(), rtvDescriptorSize);
     commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
 
     // Record commands.
@@ -280,7 +279,8 @@ void Application::populateCommandList()
     commandList->DrawInstanced(3, 1, 0, 0);
 
     // Indicate that the back buffer will now be used to present.
-    commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+    commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[dxgiManager.getCurrentBackBufferIndex()],
+        D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
     ThrowIfFailed(commandList->Close());
 }

@@ -34,7 +34,7 @@ private:
     DxgiManager dxgiManager;
     ID3D12Device* primaryDevice;
     ID3D12CommandQueue* commandQueue;
-    UINT frameIndex;
+    //UINT frameIndex;
     ID3D12DescriptorHeap* rtvHeap;
     UINT rtvDescriptorSize;
     ID3D12Resource* renderTargets[FRAME_COUNT];
