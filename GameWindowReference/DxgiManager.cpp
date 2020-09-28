@@ -12,11 +12,14 @@ void DxgiManager::createDxgiFactory()
 {
     std::cout << " DxgiManager::createDxgiFactory()" << std::endl;
 
-    UINT flags = 0;
-#ifdef DEBUG
-    flags |= DXGI_CREATE_FACTORY_DEBUG;
+    UINT dxgiFactoryFlags = 0;
+#ifdef _DEBUG
+    ID3D12Debug* debugController;
+    ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
+    debugController->EnableDebugLayer();
+    dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
 #endif // DEBUG
-    ThrowIfFailed(CreateDXGIFactory2(flags, IID_PPV_ARGS(&dxgiFactory)));
+    ThrowIfFailed(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&dxgiFactory)));
 }
 
 void DxgiManager::enumerateAdapters()
@@ -34,7 +37,10 @@ void DxgiManager::enumerateAdapters()
         if (((adapterDescriptor.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0) && (adapterDescriptor.VendorId != 5140))
         {
             std::wcout << "  " << i << ". " << adapterDescriptor.Description << std::endl;
-            hardwareAdapters[numOfAdapters++] = hardwareAdapter;
+            hardwareAdapters[numOfAdapters] = hardwareAdapter;
+            hardwareAdaptersDescriptors[numOfAdapters] = adapterDescriptor;
+            numOfAdapters++;
+
             if (numOfAdapters == MAX_NUM_OF_ADAPTERS)
             {
                 std::cout << " WARNING: Maximum number of adapters reached" << std::endl;
@@ -46,9 +52,9 @@ void DxgiManager::enumerateAdapters()
     }
 }
 
-void DxgiManager::createSwapChain(ID3D12CommandQueue* commandQueue, UINT frameCount, UINT width, UINT height, HWND hwnd)
+void DxgiManager::createPrimarySwapChain(ID3D12CommandQueue* commandQueue, UINT frameCount, UINT width, UINT height, HWND hwnd)
 {
-    std::cout << " DxgiManager::createSwapChain()" << std::endl;
+    std::cout << " DxgiManager::createPrimarySwapChain()" << std::endl;
 
     // Describe and create the swap chain.
     DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
@@ -67,6 +73,10 @@ void DxgiManager::createSwapChain(ID3D12CommandQueue* commandQueue, UINT frameCo
 
     // Upgrade to SwapChain3
     ThrowIfFailed(swapChainTemp->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&swapChain));
+
+    // Store params
+    this->width = width;
+    this->height = height;
 }
 
 void DxgiManager::present()
@@ -79,9 +89,25 @@ UINT DxgiManager::getCurrentBackBufferIndex()
     return swapChain->GetCurrentBackBufferIndex();
 }
 
+UINT DxgiManager::getRenderTargetWidth()
+{
+    return width;
+}
+
+UINT DxgiManager::getRenderTargetHeight()
+{
+    return height;
+}
+
 IDXGIAdapter1* DxgiManager::getPrimaryAdapter()
 {
+    // Adapter[0] is the adapter that Presents frames to the display
     return hardwareAdapters[0];
+}
+
+IDXGIAdapter1* DxgiManager::getSecondaryAdapter()
+{
+    return hardwareAdapters[1];
 }
 
 IDXGISwapChain3* DxgiManager::getSwapChain()

@@ -1,8 +1,19 @@
 #include "Application.h"
 
-Application::Application() : BaseWindow("GamePerformanceStudies", 1280, 720)
+#define FLIP_GPU 0
+
+#if FLIP_GPU
+Application::Application() : BaseWindow("GamePerformanceStudies", 1280, 720), primaryGpu(GpuAbstractType::SECONDARY_GPU, FRAME_COUNT), secondaryGpu(GpuAbstractType::PRIMARY_GPU, FRAME_COUNT)
+#else
+Application::Application() : BaseWindow("GamePerformanceStudies", 1280, 720), primaryGpu(GpuAbstractType::PRIMARY_GPU, FRAME_COUNT), secondaryGpu(GpuAbstractType::SECONDARY_GPU, FRAME_COUNT)
+#endif // FLIP_GPU
 {
     std::cout << "Application::Application()" << std::endl;
+
+    viewport.Width = static_cast<float>(window.getWidth());
+    viewport.Height = static_cast<float>(window.getHeight());
+    scissorRect.right = window.getWidth();
+    scissorRect.bottom = window.getHeight();
 }
 
 Application::~Application()
@@ -16,18 +27,32 @@ void Application::initialize()
 
     dxgiManager.createDxgiFactory();
     dxgiManager.enumerateAdapters();
-    createDevice();
-    createCommandQueue();
-    dxgiManager.createSwapChain(commandQueue, FRAME_COUNT, window.getWidth(), window.getHeight(), window.getHwnd());
+    primaryGpu.createDevice(dxgiManager.getPrimaryAdapter());
+    primaryGpu.createCommandQueue();
+    secondaryGpu.createDevice(dxgiManager.getSecondaryAdapter());
+    secondaryGpu.createCommandQueue();
+#if FLIP_GPU
+    dxgiManager.createPrimarySwapChain(secondaryGpu.getCommandQueue(), FRAME_COUNT, window.getWidth(), window.getHeight(), window.getHwnd());
+#else
+    dxgiManager.createPrimarySwapChain(primaryGpu.getCommandQueue(), FRAME_COUNT, window.getWidth(), window.getHeight(), window.getHwnd());
+#endif
 
-    createDescriptorHeaps();
-    createFrameResources();
-    createCommandAllocator();
-    createEmptyRootSignature();
+    primaryGpu.createDescriptorHeaps();
+    primaryGpu.createFrameResrouces(&dxgiManager);
+    primaryGpu.createCommandAllocator();
+    primaryGpu.createEmptyRootSignature();
+
+    secondaryGpu.createDescriptorHeaps();
+    secondaryGpu.createFrameResrouces(&dxgiManager);
+    secondaryGpu.createCommandAllocator();
+    secondaryGpu.createEmptyRootSignature();
     createPipelineState();
-    createCommandList();
+    primaryGpu.createCommandList(primaryGpu.getPipelineState());
+    secondaryGpu.createCommandList(secondaryGpu.getPipelineState());
+    primaryGpu.createSyncObjects();
+    secondaryGpu.createSyncObjects();
+
     createVertexBuffer();
-    createSyncObjects();
 }
 
 void Application::tick()
@@ -36,81 +61,17 @@ void Application::tick()
     populateCommandList();
 
     // Execute the command list.
-    ID3D12CommandList* ppCommandLists[] = { commandList };
-    commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+    primaryGpu.executeCommandList();
+    primaryGpu.waitForPreviousFrame();
+    secondaryGpu.executeCommandList();
+    secondaryGpu.waitForPreviousFrame();
 
     // Present the frame.
     dxgiManager.present();
 
-    waitForPreviousFrame();
-}
-
-void Application::createDevice()
-{
-    std::cout << " Application::createDevice()" << std::endl;
-
-    ThrowIfFailed(D3D12CreateDevice(dxgiManager.getPrimaryAdapter(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&primaryDevice)));
-}
-
-void Application::createCommandQueue()
-{
-    std::cout << " Application::createCommandQueue()" << std::endl;
-
-    D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-    queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-    queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-
-    ThrowIfFailed(primaryDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueue)));
-
-}
-
-void Application::createDescriptorHeaps()
-{
-    std::cout << " Application::createDescriptorHeaps()" << std::endl;
-
-    // Describe and create a render target view (RTV) descriptor heap.
-    D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-    rtvHeapDesc.NumDescriptors = FRAME_COUNT;
-    rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-    rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-    ThrowIfFailed(primaryDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvHeap)));
-
-    rtvDescriptorSize = primaryDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-}
-
-void Application::createFrameResources()
-{
-    std::cout << " Application::createFrameResources()" << std::endl;
-
-    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart());
-
-    // Create a RTV for each frame.
-    for (UINT n = 0; n < FRAME_COUNT; n++)
-    {
-        ThrowIfFailed(dxgiManager.getSwapChain()->GetBuffer(n, IID_PPV_ARGS(&renderTargets[n])));
-        primaryDevice->CreateRenderTargetView(renderTargets[n], nullptr, rtvHandle);
-        rtvHandle.Offset(1, rtvDescriptorSize);
-    }
-}
-
-void Application::createCommandAllocator()
-{
-    std::cout << " Application::createCommandAllocator()" << std::endl;
-
-    ThrowIfFailed(primaryDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator)));
-}
-
-void Application::createEmptyRootSignature()
-{
-    std::cout << " Application::createEmptyRootSignature()" << std::endl;
-
-    CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
-    rootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-    ID3DBlob* signature;
-    ID3DBlob* error;
-    ThrowIfFailed(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
-    ThrowIfFailed(primaryDevice->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rootSignature)));
+    // Wait for both frame to finish
+    
+    
 }
 
 void Application::createPipelineState()
@@ -137,30 +98,8 @@ void Application::createPipelineState()
         { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
     };
 
-    // Describe and create the graphics pipeline state object (PSO).
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
-    psoDesc.InputLayout = { inputElementDescs, _countof(inputElementDescs) };
-    psoDesc.pRootSignature = rootSignature;
-    psoDesc.VS = { reinterpret_cast<UINT8*>(vertexShader->GetBufferPointer()), vertexShader->GetBufferSize() };
-    psoDesc.PS = { reinterpret_cast<UINT8*>(pixelShader->GetBufferPointer()), pixelShader->GetBufferSize() };
-    psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-    psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-    psoDesc.DepthStencilState.DepthEnable = FALSE;
-    psoDesc.DepthStencilState.StencilEnable = FALSE;
-    psoDesc.SampleMask = UINT_MAX;
-    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    psoDesc.NumRenderTargets = 1;
-    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-    psoDesc.SampleDesc.Count = 1;
-    ThrowIfFailed(primaryDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState)));
-}
-
-void Application::createCommandList()
-{
-    std::cout << " Application::createCommandList()" << std::endl;
-
-    ThrowIfFailed(primaryDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator, pipelineState, IID_PPV_ARGS(&commandList)));
-    ThrowIfFailed(commandList->Close());
+    primaryGpu.createPipelineState(inputElementDescs, _countof(inputElementDescs), vertexShader, pixelShader);
+    secondaryGpu.createPipelineState(inputElementDescs, _countof(inputElementDescs), vertexShader, pixelShader);
 }
 
 void Application::createVertexBuffer()
@@ -183,13 +122,8 @@ void Application::createVertexBuffer()
     // recommended. Every time the GPU needs it, the upload heap will be marshalled 
     // over. Please read up on Default Heap usage. An upload heap is used here for 
     // code simplicity and because there are very few verts to actually transfer.
-    ThrowIfFailed(primaryDevice->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-        D3D12_HEAP_FLAG_NONE,
-        &CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
-        D3D12_RESOURCE_STATE_GENERIC_READ,
-        nullptr,
-        IID_PPV_ARGS(&vertexBuffer)));
+    ThrowIfFailed(primaryGpu.getDevice()->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), D3D12_HEAP_FLAG_NONE,
+        &CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize), D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&vertexBuffer)));
 
     // Copy the triangle data to the vertex buffer.
     UINT8* pVertexDataBegin;
@@ -202,85 +136,86 @@ void Application::createVertexBuffer()
     vertexBufferView.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
     vertexBufferView.StrideInBytes = sizeof(Vertex);
     vertexBufferView.SizeInBytes = vertexBufferSize;
-}
 
-void Application::createSyncObjects()
-{
-    std::cout << " Application::createSyncObjects()" << std::endl;
+    //-------------------------------------------------------------------------
 
-    ThrowIfFailed(primaryDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
-    fenceValue = 1;
+    ThrowIfFailed(secondaryGpu.getDevice()->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), D3D12_HEAP_FLAG_NONE,
+        &CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize), D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&secondaryVertexBuffer)));
 
-    // Create an event handle to use for frame synchronization.
-    fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-    if (fenceEvent == nullptr)
-    {
-        ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
-    }
+    // Copy the triangle data to the vertex buffer.
+    UINT8* pSecondaryVertexDataBegin;
+    //CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
+    ThrowIfFailed(secondaryVertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pSecondaryVertexDataBegin)));
+    memcpy(pSecondaryVertexDataBegin, triangleVertices, sizeof(triangleVertices));
+    secondaryVertexBuffer->Unmap(0, nullptr);
 
-    // Wait for the command list to execute; we are reusing the same command 
-    // list in our main loop but for now, we just want to wait for setup to 
-    // complete before continuing.
-    waitForPreviousFrame();
-}
-
-void Application::waitForPreviousFrame()
-{
-    // WAITING FOR THE FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
-    // This is code implemented as such for simplicity. More advanced samples 
-    // illustrate how to use fences for efficient resource usage.
-
-    // Signal and increment the fence value.
-    const UINT64 fenceTemp = fenceValue;
-    ThrowIfFailed(commandQueue->Signal(fence, fenceTemp));
-    fenceValue++;
-
-    // Wait until the previous frame is finished.
-    if (fence->GetCompletedValue() < fenceTemp)
-    {
-        ThrowIfFailed(fence->SetEventOnCompletion(fenceTemp, fenceEvent));
-        WaitForSingleObject(fenceEvent, INFINITE);
-    }
+    // Initialize the vertex buffer view.
+    secondaryVertexBufferView.BufferLocation = secondaryVertexBuffer->GetGPUVirtualAddress();
+    secondaryVertexBufferView.StrideInBytes = sizeof(Vertex);
+    secondaryVertexBufferView.SizeInBytes = vertexBufferSize;
 }
 
 void Application::populateCommandList()
 {
-    // Command list allocators can only be reset when the associated 
-    // command lists have finished execution on the GPU; apps should use 
-    // fences to determine GPU execution progress.
-    ThrowIfFailed(commandAllocator->Reset());
-
-    // However, when ExecuteCommandList() is called on a particular command 
-    // list, that command list can then be reset at any time and must be before 
-    // re-recording.
-    ThrowIfFailed(commandList->Reset(commandAllocator, pipelineState));
+    primaryGpu.resetCommandAllocator();
+    primaryGpu.resetCommandList();
+    primaryGpu.setRootSignature();
+    
 
     // Set necessary state.
-    viewport.Width = static_cast<float>(window.getWidth());
-    viewport.Height = static_cast<float>(window.getHeight());
-    scissorRect.right = window.getWidth();
-    scissorRect.bottom = window.getHeight();
-    commandList->SetGraphicsRootSignature(rootSignature);
-    commandList->RSSetViewports(1, &viewport);
-    commandList->RSSetScissorRects(1, &scissorRect);
+    //primaryGpu.getCommandList()->SetGraphicsRootSignature(primaryGpu.getRootSignature());
+    primaryGpu.getCommandList()->RSSetViewports(1, &viewport);
+    primaryGpu.getCommandList()->RSSetScissorRects(1, &scissorRect);
 
     // Indicate that the back buffer will be used as a render target.
-    commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[dxgiManager.getCurrentBackBufferIndex()],
+    primaryGpu.getCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(primaryGpu.getRenderTarget(dxgiManager.getCurrentBackBufferIndex()),
         D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart(), dxgiManager.getCurrentBackBufferIndex(), rtvDescriptorSize);
-    commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(primaryGpu.getRtvHeap()->GetCPUDescriptorHandleForHeapStart(), dxgiManager.getCurrentBackBufferIndex(), primaryGpu.getDescriptorSize());
+    primaryGpu.getCommandList()->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
 
     // Record commands.
     const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-    commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-    commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
-    commandList->DrawInstanced(3, 1, 0, 0);
+    primaryGpu.getCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+    primaryGpu.getCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    primaryGpu.getCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView);
+    primaryGpu.getCommandList()->DrawInstanced(3, 1, 0, 0);
 
     // Indicate that the back buffer will now be used to present.
-    commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[dxgiManager.getCurrentBackBufferIndex()],
+    primaryGpu.getCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(primaryGpu.getRenderTarget(dxgiManager.getCurrentBackBufferIndex()),
         D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
-    ThrowIfFailed(commandList->Close());
+    primaryGpu.closeCommandList();
+
+    //-------------------------------------------------------------------------
+
+    secondaryGpu.resetCommandAllocator();
+    secondaryGpu.resetCommandList();
+    secondaryGpu.setRootSignature();
+
+
+    // Set necessary state.
+    //secondaryGpu.getCommandList()->SetGraphicsRootSignature(secondaryGpu.getRootSignature());
+    secondaryGpu.getCommandList()->RSSetViewports(1, &viewport);
+    secondaryGpu.getCommandList()->RSSetScissorRects(1, &scissorRect);
+
+    // Indicate that the back buffer will be used as a render target.
+    secondaryGpu.getCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(secondaryGpu.getRenderTarget(dxgiManager.getCurrentBackBufferIndex()),
+        D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvSecondaryHandle(secondaryGpu.getRtvHeap()->GetCPUDescriptorHandleForHeapStart(), dxgiManager.getCurrentBackBufferIndex(), secondaryGpu.getDescriptorSize());
+    secondaryGpu.getCommandList()->OMSetRenderTargets(1, &rtvSecondaryHandle, FALSE, nullptr);
+
+    // Record commands.
+    const float secondaryClearColor[] = { 1.0f, 0.0f, 0.0f, 1.0f };
+    secondaryGpu.getCommandList()->ClearRenderTargetView(rtvSecondaryHandle, secondaryClearColor, 0, nullptr);
+    secondaryGpu.getCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    secondaryGpu.getCommandList()->IASetVertexBuffers(0, 1, &secondaryVertexBufferView);
+    secondaryGpu.getCommandList()->DrawInstanced(3, 1, 0, 0);
+
+    // Indicate that the back buffer will now be used to present.
+    secondaryGpu.getCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(secondaryGpu.getRenderTarget(dxgiManager.getCurrentBackBufferIndex()),
+        D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+
+    secondaryGpu.closeCommandList();
 }
