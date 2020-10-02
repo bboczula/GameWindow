@@ -38,11 +38,38 @@ void GpuAbstract::createDescriptorHeaps()
 
     rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
     std::cout << " - rtvDescriptorSize: " << rtvDescriptorSize << std::endl;
+
+    for (int i = 0; i < frameCount; i++)
+    {
+        D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc = {};
+        cbvHeapDesc.NumDescriptors = 1;
+        cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+        cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+
+        ThrowIfFailed(device->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&cbvHeap)));
+    }
 }
 
 void GpuAbstract::createFrameResrouces(DxgiManager* dxgiManager)
 {
     std::cout << " GpuAbstract::createFrameResrouces()" << std::endl;
+
+    // Create Resrouce Heap for our Constant Buffer
+    for (UINT n = 0; n < frameCount; n++)
+    {
+        ThrowIfFailed(device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), D3D12_HEAP_FLAG_NONE,
+            &CD3DX12_RESOURCE_DESC::Buffer(1024 * 64), D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&cbBufferUploadHeap[n])));
+
+        D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+        cbvDesc.BufferLocation = cbBufferUploadHeap[n]->GetGPUVirtualAddress();
+        cbvDesc.SizeInBytes = (sizeof(ConstantBuffer) + 255) & ~255;
+        device->CreateConstantBufferView(&cbvDesc, cbvHeap->GetCPUDescriptorHandleForHeapStart());
+
+        ZeroMemory(&cbColorMultiplierData, sizeof(cbColorMultiplierData));
+        CD3DX12_RANGE readRange(0, 0);
+        ThrowIfFailed(cbBufferUploadHeap[n]->Map(0, &readRange, reinterpret_cast<void**>(&cbColorMultiplierGPUAddress[n])));
+        memcpy(cbColorMultiplierGPUAddress, &cbColorMultiplierData, sizeof(cbColorMultiplierData));
+    }
 
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart());
 
@@ -88,16 +115,34 @@ void GpuAbstract::createEmptyRootSignature()
 {
     std::cout << " GpuAbstract::createEmptyRootSignature()" << std::endl;
 
-    CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
-    rootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+    // CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
+    // rootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+    D3D12_DESCRIPTOR_RANGE descriptorRange[1];
+    ZeroMemory(&descriptorRange, sizeof(D3D12_DESCRIPTOR_RANGE));
+    descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+    descriptorRange[0].NumDescriptors = 1;
+    descriptorRange[0].BaseShaderRegister = 0;
+    descriptorRange[0].RegisterSpace = 0;
+    descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+    D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable;
+    ZeroMemory(&descriptorTable, sizeof(D3D12_ROOT_DESCRIPTOR_TABLE));
+    descriptorTable.NumDescriptorRanges = _countof(descriptorRange);
+    descriptorTable.pDescriptorRanges = &descriptorRange[0];
+
+    D3D12_ROOT_PARAMETER rootParameter[1];
+    rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameter[0].DescriptorTable = descriptorTable;
+    rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 
     // RootSignature is the paramter list of the pipeline.
-    D3D12_ROOT_SIGNATURE_DESC rootSignatureDescription;
-    ZeroMemory(&rootSignatureDescription, sizeof(D3D12_ROOT_SIGNATURE_DESC));
+    CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDescription;
+    rootSignatureDescription.Init(_countof(rootParameter), rootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
     ID3DBlob* signature;
     ID3DBlob* error;
-    ThrowIfFailed(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
+    ThrowIfFailed(D3D12SerializeRootSignature(&rootSignatureDescription, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
     ThrowIfFailed(device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rootSignature)));
 }
 

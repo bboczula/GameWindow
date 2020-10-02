@@ -2,6 +2,7 @@
 
 #include <d3d12.h>
 #include <dxgi.h>
+#include <DirectXMath.h>
 #include <iostream>
 
 #include "Utils.h"
@@ -12,6 +13,11 @@ enum GpuAbstractType
 {
 	PRIMARY_GPU,
 	SECONDARY_GPU
+};
+
+// this is the structure of our constant buffer.
+struct ConstantBuffer {
+	DirectX::XMFLOAT4 colorMultiplier;
 };
 
 class GpuAbstract
@@ -44,13 +50,17 @@ public:
 	ID3D12GraphicsCommandList* getCommandList();
 	ID3D12PipelineState* getPipelineState();
 private:
+	ConstantBuffer cbColorMultiplierData;
+	UINT8* cbColorMultiplierGPUAddress[2];
 	GpuAbstractType type;
 	ID3D12Device* device;
 	ID3D12CommandQueue* commandQueue;
 	ID3D12DescriptorHeap* rtvHeap;
+	ID3D12DescriptorHeap* cbvHeap;
 	UINT rtvDescriptorSize;
 	UINT frameCount;
 	ID3D12Resource* renderTargets[2];
+	ID3D12Resource* cbBufferUploadHeap[2];
 	ID3D12CommandAllocator* commandAllocator;
 	ID3D12RootSignature* rootSignature;
 	ID3D12GraphicsCommandList* commandList;
