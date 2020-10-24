@@ -13,6 +13,9 @@ BaseWindow::BaseWindow(const char* title, int width, int height) : title(), widt
 	strcpy_s(this->title, title);
 	window.registerWindowClass();
 	window.createWindowInstance();
+
+	// Create DXGI Manager
+	dxgiManager = new DxgiManager();
 }
 
 BaseWindow::~BaseWindow()

@@ -7,6 +7,7 @@
 #include <string>
 
 #include "WindowClass.h"
+#include "DxgiManager.h"
 #include "IWindowComponent.h"
 #include "Timer.h"
 
@@ -20,6 +21,7 @@ public:
 	void start();
 	void add(IWindowComponent* component);
 protected:
+	DxgiManager* dxgiManager;
 	WindowClass window;
 	Timer timer;
 	CHAR title[MAX_TITLE_LENGTH];

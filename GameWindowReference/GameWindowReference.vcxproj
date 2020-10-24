@@ -152,10 +152,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
-    <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="DxgiManager.cpp" />
     <ClCompile Include="GameWindowReference.cpp" />
-    <ClCompile Include="GpuAbstract.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\GameWindow\GameWindow.vcxproj">
@@ -164,14 +161,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
-    <ClInclude Include="Camera.h" />
     <ClInclude Include="d3dx12.h" />
-    <ClInclude Include="DxgiManager.h" />
-    <ClInclude Include="GpuAbstract.h" />
     <ClInclude Include="Utils.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="shaders.hlsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
