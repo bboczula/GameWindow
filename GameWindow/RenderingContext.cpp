@@ -41,6 +41,7 @@ RenderingContext::~RenderingContext()
 
 void RenderingContext::OnRender()
 {
+	ResetCommandList();
 	RecordCommandList();
 	ExecuteCommandList();
 	PresentFrame();
@@ -182,10 +183,6 @@ void RenderingContext::CreateCommandList()
 
 void RenderingContext::RecordCommandList()
 {
-	ThrowIfFailed(commandAllocator->Reset());
-
-	ThrowIfFailed(commandList->Reset(commandAllocator.Get(), nullptr));
-
 	// Clear screen command
 	// Depending on the frame, we should return the proper descriptor for RTV
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHandle = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
@@ -204,6 +201,12 @@ void RenderingContext::RecordCommandList()
 
 	// Close the command list
 	ThrowIfFailed(commandList->Close());
+}
+
+void RenderingContext::ResetCommandList()
+{
+	ThrowIfFailed(commandAllocator->Reset());
+	ThrowIfFailed(commandList->Reset(commandAllocator.Get(), nullptr));
 }
 
 void RenderingContext::ExecuteCommandList()

@@ -31,6 +31,7 @@ private:
 	void CreateCommandAllocator();
 	void CreateCommandList();
 	void RecordCommandList();
+	void ResetCommandList();
 	void ExecuteCommandList();
 	void PresentFrame();
 	void WaitForThePreviousFrame();
