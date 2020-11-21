@@ -1,6 +1,7 @@
 #include "Window.h"
 
 #define WINDOW_CLASS_NAME "AstralMyWindowWin32Class"
+#define WINDOW_TITLE "AstralEngine"
 #define DEFAULT_WINDOW_STYLE WS_VISIBLE | WS_CLIPCHILDREN | WS_OVERLAPPED  | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX
 #define DEFAULT_WINDOW_STYLE_EX WS_EX_APPWINDOW | WS_EX_CLIENTEDGE
 
@@ -26,7 +27,7 @@ static LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
-Astral::Window::Window(UINT width, UINT height) : windowContext(nullptr, GetModuleHandle(NULL), width, height), title("GameWindow")
+Astral::Window::Window(UINT width, UINT height) : windowContext(nullptr, GetModuleHandle(NULL), width, height), title(WINDOW_TITLE)
 {
 	std::cout << "WindowClass::WindowClass()" << std::endl;
 	RegisterWindowClass();

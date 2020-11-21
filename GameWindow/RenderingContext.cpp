@@ -109,7 +109,7 @@ void RenderingContext::CreateSwapChain(const Astral::WindowContext& windowContex
 	DXGI_MODE_DESC dxgiModeDesc;
 	dxgiModeDesc.Width = windowContext.width;
 	dxgiModeDesc.Height = windowContext.height;
-	dxgiModeDesc.RefreshRate = DXGI_RATIONAL({ 0,0 });
+	dxgiModeDesc.RefreshRate = DXGI_RATIONAL({ 0, 1 });
 	dxgiModeDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	dxgiModeDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	dxgiModeDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
@@ -214,7 +214,7 @@ void RenderingContext::ExecuteCommandList()
 
 void RenderingContext::PresentFrame()
 {
-	ThrowIfFailed(swapChain->Present(1, 0));
+	ThrowIfFailed(swapChain->Present(0, 0));
 }
 
 void RenderingContext::WaitForThePreviousFrame()
