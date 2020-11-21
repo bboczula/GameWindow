@@ -13,11 +13,11 @@
 
 namespace Astral
 {
-	class Engine
+	class Game
 	{
 	public:
-		Engine(int width, int heigh);
-		virtual ~Engine();
+		Game(int width, int heigh);
+		virtual ~Game();
 		void start();
 	protected:
 		Astral::Window window;

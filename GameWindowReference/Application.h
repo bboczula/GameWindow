@@ -8,12 +8,12 @@
 #include <DirectXMath.h>
 
 #include "d3dx12.h"
-#include "Engine.h"
+#include "Game.h"
 
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "D3DCompiler.lib")
 
-class Application : public Astral::Engine
+class Application : public Astral::Game
 {
 public:
     Application();

@@ -34,7 +34,7 @@
     <ClInclude Include="Window.h">
       <Filter>Window</Filter>
     </ClInclude>
-    <ClInclude Include="Engine.h">
+    <ClInclude Include="Game.h">
       <Filter>Window</Filter>
     </ClInclude>
   </ItemGroup>
@@ -54,7 +54,7 @@
     <ClCompile Include="Window.cpp">
       <Filter>Window</Filter>
     </ClCompile>
-    <ClCompile Include="Engine.cpp">
+    <ClCompile Include="Game.cpp">
       <Filter>Window</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,6 +1,6 @@
 #include "Application.h"
 
-Application::Application() : Engine(960, 540)
+Application::Application() : Game(960, 540)
 {
     std::cout << "Application::Application()" << std::endl;
 }

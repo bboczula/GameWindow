@@ -1,4 +1,4 @@
-#include "Engine.h"
+#include "Game.h"
 
 #include <iostream>
 
@@ -6,18 +6,18 @@
 #define LOG(s) std::cout << s << std::endl
 #endif // !LOG
 
-Astral::Engine::Engine(int width, int height) : window(width, height)
+Astral::Game::Game(int width, int height) : window(width, height)
 {
 	LOG("BaseWindow::BaseWindow()");
 	renderContext = new RenderingContext(window.GetWindowContext());
 }
 
-Astral::Engine::~Engine()
+Astral::Game::~Game()
 {
 	LOG("BaseWindow::~BaseWindow()");
 }
 
-void Astral::Engine::start()
+void Astral::Game::start()
 {
 	LOG("BaseWindow::start()");
 
@@ -52,15 +52,15 @@ void Astral::Engine::start()
 	LOG("BaseWindow::start() - finished");
 }
 
-void Astral::Engine::initialize()
+void Astral::Game::initialize()
 {
 }
 
-void Astral::Engine::tick()
+void Astral::Game::tick()
 {
 }
 
-void Astral::Engine::render()
+void Astral::Game::render()
 {
 	renderContext->OnRender();
 }
