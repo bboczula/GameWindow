@@ -4,8 +4,6 @@
 #include <iostream>
 #include "WindowContext.h"
 
-#define MAX_TITLE_LENGTH 64
-
 namespace Astral
 {
 	class Window
@@ -18,6 +16,5 @@ namespace Astral
 		WindowContext GetWindowContext();
 	private:
 		WindowContext windowContext;
-		CHAR title[MAX_TITLE_LENGTH];
 	};
 }

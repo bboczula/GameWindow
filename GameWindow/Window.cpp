@@ -27,7 +27,7 @@ static LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
-Astral::Window::Window(UINT width, UINT height) : windowContext(nullptr, GetModuleHandle(NULL), width, height), title(WINDOW_TITLE)
+Astral::Window::Window(UINT width, UINT height) : windowContext(nullptr, GetModuleHandle(NULL), width, height)
 {
 	std::cout << "WindowClass::WindowClass()" << std::endl;
 	RegisterWindowClass();
@@ -65,7 +65,7 @@ void Astral::Window::CreateWindowInstance()
 	RECT windowRectangle = { 0, 0, windowContext.width, windowContext.height };
 	AdjustWindowRect(&windowRectangle, WS_OVERLAPPEDWINDOW, FALSE);
 
-	windowContext.hwnd = CreateWindowEx(DEFAULT_WINDOW_STYLE_EX, WINDOW_CLASS_NAME, title, DEFAULT_WINDOW_STYLE,
+	windowContext.hwnd = CreateWindowEx(DEFAULT_WINDOW_STYLE_EX, WINDOW_CLASS_NAME, WINDOW_TITLE, DEFAULT_WINDOW_STYLE,
 		CW_USEDEFAULT, CW_USEDEFAULT, windowRectangle.right, windowRectangle.bottom, NULL, NULL, windowContext.instance, NULL);
 
 	if (!windowContext.hwnd)
