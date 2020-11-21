@@ -7,6 +7,7 @@
 int main()
 {
     Application app;
+    std::cout << "sizeof(Application): " << sizeof(Application) << std::endl;
     app.start();
 }
 

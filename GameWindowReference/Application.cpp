@@ -9,6 +9,7 @@ Application::Application() : BaseWindow("GamePerformanceStudies", 1280, 720)
 #endif // FLIP_GPU
 {
     std::cout << "Application::Application()" << std::endl;
+    std::cout << "sizeof(BaseWindow): " << sizeof(BaseWindow) << std::endl;
 }
 
 Application::~Application()

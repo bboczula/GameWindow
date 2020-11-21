@@ -7,15 +7,12 @@
     <Filter Include="Components">
       <UniqueIdentifier>{c56db391-3048-425b-b282-05d443366982}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Dxgi">
-      <UniqueIdentifier>{b57133ce-7338-4feb-a045-f1d1b76471e0}</UniqueIdentifier>
+    <Filter Include="Rendering">
+      <UniqueIdentifier>{d90c6732-eaad-4a3e-8783-aef4f68e7a37}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BaseWindow.h">
-      <Filter>Window</Filter>
-    </ClInclude>
-    <ClInclude Include="DisplayDescriptor.h">
       <Filter>Window</Filter>
     </ClInclude>
     <ClInclude Include="IWindowComponent.h">
@@ -33,15 +30,16 @@
     <ClInclude Include="Timer.h">
       <Filter>Components</Filter>
     </ClInclude>
-    <ClInclude Include="DxgiManager.h">
-      <Filter>Dxgi</Filter>
+    <ClInclude Include="RenderingContext.h">
+      <Filter>Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="WindowContext.h">
+      <Filter>Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BaseWindow.cpp">
-      <Filter>Window</Filter>
-    </ClCompile>
-    <ClCompile Include="DisplayDescriptor.cpp">
       <Filter>Window</Filter>
     </ClCompile>
     <ClCompile Include="WindowClass.cpp">
@@ -56,8 +54,11 @@
     <ClCompile Include="Timer.cpp">
       <Filter>Components</Filter>
     </ClCompile>
-    <ClCompile Include="DxgiManager.cpp">
-      <Filter>Dxgi</Filter>
+    <ClCompile Include="RenderingContext.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowContext.cpp">
+      <Filter>Window</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

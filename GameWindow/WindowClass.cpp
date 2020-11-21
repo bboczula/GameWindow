@@ -26,9 +26,11 @@ static LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
-WindowClass::WindowClass() : title("GameWindow"), windowStyle(DEFAULT_WINDOW_STYLE), windowStyleEx(DEFAULT_WINDOW_STYLE_EX), hwnd(NULL)
+WindowClass::WindowClass() : title("GameWindow")
 {
 	std::cout << "WindowClass::WindowClass()" << std::endl;
+	registerWindowClass();
+	createWindowInstance();
 }
 
 WindowClass::~WindowClass()
@@ -58,16 +60,23 @@ void WindowClass::createWindowInstance()
 {
 	std::cout << " WindowClass::createWindowInstance()" << std::endl;
 
-	RECT windowRectangle = { 0, 0, display.getWidth(), display.getHeight() };
+	windowContext.width = 1280;
+	windowContext.height = 720;
+
+	RECT windowRectangle = { 0, 0, windowContext.width, windowContext.height };
 	AdjustWindowRect(&windowRectangle, WS_OVERLAPPEDWINDOW, FALSE);
 
 	INT startPositionX = CW_USEDEFAULT;
 	INT startPositionY = CW_USEDEFAULT;
 
-	hwnd = CreateWindowEx(windowStyleEx, WINDOW_CLASS_NAME, title, windowStyle, startPositionX, startPositionY,
-		windowRectangle.right, windowRectangle.bottom, NULL, NULL, GetModuleHandle(NULL), NULL);
+	windowContext.instance = GetModuleHandle(NULL);
 
-	if (hwnd == NULL)
+	HWND hwnd = CreateWindowEx(DEFAULT_WINDOW_STYLE_EX, WINDOW_CLASS_NAME, title, DEFAULT_WINDOW_STYLE, startPositionX, startPositionY,
+		windowRectangle.right, windowRectangle.bottom, NULL, NULL, windowContext.instance, NULL);
+
+	windowContext.hwnd = hwnd;
+
+	if (windowContext.hwnd == NULL)
 	{
 		std::cout << "ERROR: Window creation failed (" << GetLastError() << ")." << std::endl;
 	}
@@ -75,15 +84,20 @@ void WindowClass::createWindowInstance()
 
 HWND WindowClass::getHwnd()
 {
-	return hwnd;
+	return windowContext.hwnd;
 }
 
 LONG WindowClass::getWidth()
 {
-	return display.getWidth();
+	return windowContext.width;
 }
 
 LONG WindowClass::getHeight()
 {
-	return display.getHeight();
+	return windowContext.height;
+}
+
+Astral::WindowContext WindowClass::GetWindowContext()
+{
+	return windowContext;
 }

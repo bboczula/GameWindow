@@ -6,16 +6,14 @@
 #define LOG(s) std::cout << s << std::endl
 #endif // !LOG
 
-BaseWindow::BaseWindow(const char* title, int width, int height) : title(), width(width), height(height), instance(GetModuleHandle(NULL))
+BaseWindow::BaseWindow(const char* title, int width, int height)
 {
 	// Here you need to initialize your char arrach
 	LOG("BaseWindow::BaseWindow()");
-	strcpy_s(this->title, title);
-	window.registerWindowClass();
-	window.createWindowInstance();
-
-	// Create DXGI Manager
-	dxgiManager = new DxgiManager();
+	std::cout << "sizeof(WindowClass): " << sizeof(WindowClass) << std::endl;
+	std::cout << "sizeof(Timer): " << sizeof(Timer) << std::endl;
+	std::cout << "sizeof(RenderingContext): " << sizeof(RenderingContext) << std::endl;
+	renderContext = new RenderingContext(window.GetWindowContext());
 }
 
 BaseWindow::~BaseWindow()
@@ -27,16 +25,11 @@ void BaseWindow::start()
 {
 	LOG("BaseWindow::start()");
 
-	for (int i = 0; i < numOfComponents; i++)
-	{
-		components[i]->initialize();
-	}
-
-	MSG message{ 0 };
 	initialize();
 
 	// For each thread that creates the window, the OS creates a queue for window messages.
 	// This queue holds messages  for all windows that are created on that thread.
+	MSG message{ 0 };
 	while (message.message != WM_QUIT)
 	{
 		timer.start();
@@ -54,21 +47,13 @@ void BaseWindow::start()
 		else
 		{
 			tick();
+			render();
 		}
 
-		for (int i = 0; i < numOfComponents; i++)
-		{
-			components[i]->postFrame();
-		}
 		timer.stop();
 	}
 
 	LOG("BaseWindow::start() - finished");
-}
-
-void BaseWindow::add(IWindowComponent* component)
-{
-	components[numOfComponents++] = component;
 }
 
 void BaseWindow::initialize()
@@ -77,4 +62,9 @@ void BaseWindow::initialize()
 
 void BaseWindow::tick()
 {
+}
+
+void BaseWindow::render()
+{
+	renderContext->OnRender();
 }

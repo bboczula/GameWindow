@@ -2,7 +2,7 @@
 
 #include <Windows.h>
 #include <iostream>
-#include "DisplayDescriptor.h"
+#include "WindowContext.h"
 
 #define MAX_TITLE_LENGTH 64
 
@@ -16,10 +16,8 @@ public:
 	HWND getHwnd();
 	LONG getWidth();
 	LONG getHeight();
+	Astral::WindowContext GetWindowContext();
 private:
-	HWND hwnd;
-	Astral::DisplayDescriptor display;
-	const LONG windowStyleEx;
-	const LONG windowStyle;
+	Astral::WindowContext windowContext;
 	CHAR title[MAX_TITLE_LENGTH];
 };
