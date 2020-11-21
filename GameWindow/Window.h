@@ -15,9 +15,9 @@ namespace Astral
 		~Window();
 		void RegisterWindowClass();
 		void CreateWindowInstance();
-		Astral::WindowContext GetWindowContext();
+		WindowContext GetWindowContext();
 	private:
-		Astral::WindowContext windowContext;
+		WindowContext windowContext;
 		CHAR title[MAX_TITLE_LENGTH];
 	};
 }
