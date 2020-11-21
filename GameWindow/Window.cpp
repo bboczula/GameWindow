@@ -1,6 +1,6 @@
-#include "WindowClass.h"
+#include "Window.h"
 
-#define WINDOW_CLASS_NAME "MyWindowWin32Class"
+#define WINDOW_CLASS_NAME "AstralMyWindowWin32Class"
 #define DEFAULT_WINDOW_STYLE WS_VISIBLE | WS_CLIPCHILDREN | WS_OVERLAPPED  | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX
 #define DEFAULT_WINDOW_STYLE_EX WS_EX_APPWINDOW | WS_EX_CLIENTEDGE
 
@@ -26,19 +26,19 @@ static LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
-WindowClass::WindowClass() : title("GameWindow")
+Astral::Window::Window(UINT width, UINT height) : windowContext(nullptr, GetModuleHandle(NULL), width, height), title("GameWindow")
 {
 	std::cout << "WindowClass::WindowClass()" << std::endl;
-	registerWindowClass();
-	createWindowInstance();
+	RegisterWindowClass();
+	CreateWindowInstance();
 }
 
-WindowClass::~WindowClass()
+Astral::Window::~Window()
 {
 	std::cout << "WindowClass::~WindowClass()" << std::endl;
 }
 
-void WindowClass::registerWindowClass()
+void Astral::Window::RegisterWindowClass()
 {
 	std::cout << " WindowClass::registerWindowClass()" << std::endl;
 
@@ -47,57 +47,34 @@ void WindowClass::registerWindowClass()
 	windowClass.cbSize = sizeof(WNDCLASSEX);
 	windowClass.lpszClassName = WINDOW_CLASS_NAME;
 	windowClass.lpfnWndProc = (WNDPROC)WindowProcedure;
-	windowClass.hInstance = GetModuleHandle(NULL);
+	windowClass.hInstance = windowContext.instance;
 
 
 	if (!RegisterClassEx(&windowClass))
 	{
 		std::cout << "ERROR: Window Class registration failed." << std::endl;
+		exit(1);
 	}
 }
 
-void WindowClass::createWindowInstance()
+void Astral::Window::CreateWindowInstance()
 {
 	std::cout << " WindowClass::createWindowInstance()" << std::endl;
-
-	windowContext.width = 1280;
-	windowContext.height = 720;
 
 	RECT windowRectangle = { 0, 0, windowContext.width, windowContext.height };
 	AdjustWindowRect(&windowRectangle, WS_OVERLAPPEDWINDOW, FALSE);
 
-	INT startPositionX = CW_USEDEFAULT;
-	INT startPositionY = CW_USEDEFAULT;
+	windowContext.hwnd = CreateWindowEx(DEFAULT_WINDOW_STYLE_EX, WINDOW_CLASS_NAME, title, DEFAULT_WINDOW_STYLE,
+		CW_USEDEFAULT, CW_USEDEFAULT, windowRectangle.right, windowRectangle.bottom, NULL, NULL, windowContext.instance, NULL);
 
-	windowContext.instance = GetModuleHandle(NULL);
-
-	HWND hwnd = CreateWindowEx(DEFAULT_WINDOW_STYLE_EX, WINDOW_CLASS_NAME, title, DEFAULT_WINDOW_STYLE, startPositionX, startPositionY,
-		windowRectangle.right, windowRectangle.bottom, NULL, NULL, windowContext.instance, NULL);
-
-	windowContext.hwnd = hwnd;
-
-	if (windowContext.hwnd == NULL)
+	if (!windowContext.hwnd)
 	{
-		std::cout << "ERROR: Window creation failed (" << GetLastError() << ")." << std::endl;
+		std::cout << "ERROR: Window creation failed (" << GetLastError() << ")" << std::endl;
+		exit(1);
 	}
 }
 
-HWND WindowClass::getHwnd()
-{
-	return windowContext.hwnd;
-}
-
-LONG WindowClass::getWidth()
-{
-	return windowContext.width;
-}
-
-LONG WindowClass::getHeight()
-{
-	return windowContext.height;
-}
-
-Astral::WindowContext WindowClass::GetWindowContext()
+Astral::WindowContext Astral::Window::GetWindowContext()
 {
 	return windowContext;
 }

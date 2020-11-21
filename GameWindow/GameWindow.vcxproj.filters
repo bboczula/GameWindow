@@ -12,13 +12,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BaseWindow.h">
-      <Filter>Window</Filter>
-    </ClInclude>
     <ClInclude Include="IWindowComponent.h">
-      <Filter>Window</Filter>
-    </ClInclude>
-    <ClInclude Include="WindowClass.h">
       <Filter>Window</Filter>
     </ClInclude>
     <ClInclude Include="Gamepad.h">
@@ -37,14 +31,14 @@
       <Filter>Window</Filter>
     </ClInclude>
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="Window.h">
+      <Filter>Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine.h">
+      <Filter>Window</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="BaseWindow.cpp">
-      <Filter>Window</Filter>
-    </ClCompile>
-    <ClCompile Include="WindowClass.cpp">
-      <Filter>Window</Filter>
-    </ClCompile>
     <ClCompile Include="Gamepad.cpp">
       <Filter>Components</Filter>
     </ClCompile>
@@ -57,7 +51,10 @@
     <ClCompile Include="RenderingContext.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="WindowContext.cpp">
+    <ClCompile Include="Window.cpp">
+      <Filter>Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine.cpp">
       <Filter>Window</Filter>
     </ClCompile>
   </ItemGroup>

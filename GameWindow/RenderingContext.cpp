@@ -2,6 +2,8 @@
 
 #define LOG_FUNC_NAME std::cout << __func__ << "()" << std::endl
 
+#define RELEASE(comObject) if(comObject) { comObject->Release(); comObject = nullptr; }
+
 RenderingContext::RenderingContext(Astral::WindowContext windowContext) : currentFrameIndex(0)
 {
 	LOG_FUNC_NAME;
@@ -20,6 +22,21 @@ RenderingContext::RenderingContext(Astral::WindowContext windowContext) : curren
 RenderingContext::~RenderingContext()
 {
 	LOG_FUNC_NAME;
+
+	RELEASE(commandList);
+	RELEASE(commandAllocator);
+
+	for (int i = 0; i < FRAME_COUNT; i++)
+	{
+		RELEASE(renderTargets[i]);
+	}
+
+	RELEASE(rtvDescriptorHeap);
+	RELEASE(swapChain);
+	RELEASE(graphicsCommandQueue);
+	RELEASE(device);
+	RELEASE(adapter);
+	RELEASE(factory);
 }
 
 void RenderingContext::OnRender()

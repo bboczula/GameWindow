@@ -1,4 +1,4 @@
-#include "BaseWindow.h"
+#include "Engine.h"
 
 #include <iostream>
 
@@ -6,22 +6,18 @@
 #define LOG(s) std::cout << s << std::endl
 #endif // !LOG
 
-BaseWindow::BaseWindow(const char* title, int width, int height)
+Astral::Engine::Engine(int width, int height) : window(width, height)
 {
-	// Here you need to initialize your char arrach
 	LOG("BaseWindow::BaseWindow()");
-	std::cout << "sizeof(WindowClass): " << sizeof(WindowClass) << std::endl;
-	std::cout << "sizeof(Timer): " << sizeof(Timer) << std::endl;
-	std::cout << "sizeof(RenderingContext): " << sizeof(RenderingContext) << std::endl;
 	renderContext = new RenderingContext(window.GetWindowContext());
 }
 
-BaseWindow::~BaseWindow()
+Astral::Engine::~Engine()
 {
 	LOG("BaseWindow::~BaseWindow()");
 }
 
-void BaseWindow::start()
+void Astral::Engine::start()
 {
 	LOG("BaseWindow::start()");
 
@@ -56,15 +52,15 @@ void BaseWindow::start()
 	LOG("BaseWindow::start() - finished");
 }
 
-void BaseWindow::initialize()
+void Astral::Engine::initialize()
 {
 }
 
-void BaseWindow::tick()
+void Astral::Engine::tick()
 {
 }
 
-void BaseWindow::render()
+void Astral::Engine::render()
 {
 	renderContext->OnRender();
 }

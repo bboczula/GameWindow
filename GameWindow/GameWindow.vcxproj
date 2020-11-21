@@ -139,7 +139,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="BaseWindow.h" />
+    <ClInclude Include="Engine.h" />
     <ClInclude Include="Utils.h" />
     <ClInclude Include="WindowContext.h" />
     <ClInclude Include="Gamepad.h" />
@@ -147,16 +147,15 @@
     <ClInclude Include="IWindowComponent.h" />
     <ClInclude Include="RenderingContext.h" />
     <ClInclude Include="Timer.h" />
-    <ClInclude Include="WindowClass.h" />
+    <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="BaseWindow.cpp" />
-    <ClCompile Include="WindowContext.cpp" />
+    <ClCompile Include="Engine.cpp" />
     <ClCompile Include="Gamepad.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="RenderingContext.cpp" />
     <ClCompile Include="Timer.cpp" />
-    <ClCompile Include="WindowClass.cpp" />
+    <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
