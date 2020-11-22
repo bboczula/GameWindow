@@ -16,7 +16,7 @@ namespace Astral
 	class Game
 	{
 	public:
-		Game(int width, int heigh);
+		Game(int width, int height);
 		virtual ~Game();
 		void start();
 	protected:
