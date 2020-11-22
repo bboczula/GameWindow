@@ -10,11 +10,11 @@ Application::~Application()
     std::cout << "Application::~Application()" << std::endl;
 }
 
-void Application::initialize()
+void Application::Initialization()
 {
     std::cout << " Application::initialize()" << std::endl;
 }
 
-void Application::tick()
+void Application::Logic()
 {
 }

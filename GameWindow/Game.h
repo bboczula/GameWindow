@@ -23,8 +23,8 @@ namespace Astral
 		Window window;
 		Timer timer;
 		RenderingContext* renderContext;
-		virtual void initialize();
-		virtual void tick();
-		virtual void render();
+		virtual void Initialization();
+		virtual void Logic();
+		virtual void Rendering();
 	};
 }

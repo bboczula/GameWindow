@@ -21,7 +21,7 @@ void Astral::Game::start()
 {
 	LOG("BaseWindow::start()");
 
-	initialize();
+	Initialization();
 
 	// For each thread that creates the window, the OS creates a queue for window messages.
 	// This queue holds messages  for all windows that are created on that thread.
@@ -42,8 +42,8 @@ void Astral::Game::start()
 		}
 		else
 		{
-			tick();
-			render();
+			Logic();
+			Rendering();
 		}
 
 		timer.stop();
@@ -52,15 +52,15 @@ void Astral::Game::start()
 	LOG("BaseWindow::start() - finished");
 }
 
-void Astral::Game::initialize()
+void Astral::Game::Initialization()
 {
 }
 
-void Astral::Game::tick()
+void Astral::Game::Logic()
 {
 }
 
-void Astral::Game::render()
+void Astral::Game::Rendering()
 {
 	renderContext->OnRender();
 }

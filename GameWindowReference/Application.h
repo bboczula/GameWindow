@@ -18,6 +18,6 @@ class Application : public Astral::Game
 public:
     Application();
     ~Application();
-    void initialize() override;
-    void tick() override;
+    void Initialization() override;
+    void Logic() override;
 };
