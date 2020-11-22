@@ -20,7 +20,7 @@ namespace Astral
 		virtual ~Game();
 		void start();
 	protected:
-		Astral::Window window;
+		Window window;
 		Timer timer;
 		RenderingContext* renderContext;
 		virtual void initialize();
