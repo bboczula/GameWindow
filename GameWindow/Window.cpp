@@ -11,6 +11,7 @@ static LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 	{
 	case WM_CLOSE:
 	{
+		std::cout << "<WM_CLOSE>" << std::endl;
 		// This function sends WM_DESTROY and WM_NCDESTROY messages to the window and removes keyboard focus from it
 		// Also it fushes the thread message queue, destroys timers, remove clipboard ownership and breaks clipboard viewer chain
 		DestroyWindow(hwnd);
@@ -18,6 +19,7 @@ static LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPAR
 	}
 	case WM_DESTROY:
 	{
+		std::cout << "<WM_DESTROY>" << std::endl;
 		// This function puts WM_QUIT message on top of the queue - a speciall message that causes GetMessage to return 0
 		PostQuitMessage(0);
 		break;

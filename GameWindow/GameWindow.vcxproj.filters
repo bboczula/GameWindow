@@ -37,6 +37,12 @@
     <ClInclude Include="Game.h">
       <Filter>Window</Filter>
     </ClInclude>
+    <ClInclude Include="Shader.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="d3dx12.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Gamepad.cpp">
@@ -57,5 +63,13 @@
     <ClCompile Include="Game.cpp">
       <Filter>Window</Filter>
     </ClCompile>
+    <ClCompile Include="Shader.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="shaders.hlsl">
+      <Filter>Rendering</Filter>
+    </Text>
   </ItemGroup>
 </Project>

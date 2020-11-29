@@ -5,14 +5,23 @@
 #include <iostream>
 #include <wrl.h>
 #include <windows.h>
+#include <vector>
+#include <DirectXMath.h>
 
 #include "WindowContext.h"
 #include "Utils.h"
-#include "WindowContext.h"
+#include "Shader.h"
+#include "d3dx12.h"
 
 #pragma comment(lib, "dxgi.lib")
 
 #define FRAME_COUNT 2
+
+struct Vertex
+{
+	DirectX::XMFLOAT3 position;
+	DirectX::XMFLOAT4 color;
+};
 
 class RenderingContext
 {
@@ -23,6 +32,7 @@ public:
 private:
 	void CreateDxgiFactory();
 	void EnumerateAdapters();
+	void EnumerateOutputs();
 	void CreateDevice();
 	void CreateCommandQueue();
 	void CreateSwapChain(const Astral::WindowContext& windowContext);
@@ -30,6 +40,9 @@ private:
 	void CreateRenderTargetViews();
 	void CreateCommandAllocator();
 	void CreateCommandList();
+	void CreateEmptyRootSignature();
+	void CreatePipelineState();
+	void CreateVertexBuffer();
 	void RecordCommandList();
 	void ResetCommandList();
 	void ExecuteCommandList();
@@ -45,6 +58,8 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12Resource> renderTargets[FRAME_COUNT];
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator;
-	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> rootSignature;
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
+	Microsoft::WRL::ComPtr< ID3D12Resource> vertexBuffer;
 };
