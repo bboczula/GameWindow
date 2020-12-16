@@ -1,24 +1,11 @@
 #include "Shader.h"
 
-void Shader::compile()
+Shader::Shader(std::string name, std::string entryPoint, std::string shaderModel) : fileName(name), entryPoint(entryPoint), shaderModel(shaderModel)
 {
-	UINT compilationFlags = D3DCOMPILE_ENABLE_STRICTNESS;
-#if defined(DEBUG) || defined(_DEBUG)
-	compilationFlags |= D3DCOMPILE_DEBUG;
-#endif
+}
 
-	ID3DBlob* errorBlob = nullptr;
-	HRESULT shaderCompilationStatus = D3DCompile2(source.c_str(), source.length(), nullptr, nullptr,
-		nullptr, entryPoint.c_str(), shaderModel.c_str(), compilationFlags, 0, 0, nullptr, 0, &shaderBlob, &errorBlob);
-
-	if (FAILED(shaderCompilationStatus))
-	{
-		handleCompilationFailure(errorBlob, shaderCompilationStatus);
-	}
-	else
-	{
-		std::cout << "Shader compilation succeded (" << fileName << ")." << std::endl;
-	}
+Shader::Shader() : fileName("Not-Set"), entryPoint("Not-Set"), shaderModel("Not-Set")
+{
 }
 
 void Shader::setEntryPoint(std::string entryPoint)
@@ -36,23 +23,21 @@ ID3DBlob* Shader::getBlobPointer()
 	return shaderBlob;
 }
 
-void Shader::loadShaderFromFile(std::string fileName)
+void Shader::compileShaderFromFile(std::wstring fileName)
 {
-	this->fileName = fileName;
-	std::string line;
-	std::ifstream shaderFile(fileName);
-	if (shaderFile.is_open())
-	{
-		while (std::getline(shaderFile, line))
-		{
-			source += line + "\n";
-		}
-		shaderFile.close();
-	}
-	else
-	{
-		throw std::invalid_argument("File opening failure.");
-	}
+	std::cout << "Shader::compileShaderFromFile()" << std::endl;
+
+#if defined(_DEBUG)
+	// Enable better shader debugging with the graphics debugging tools.
+	UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#else
+	UINT compileFlags = 0;
+#endif
+	ID3DBlob* errorBlob = nullptr;
+
+	HRESULT shaderCompilationStatus = D3DCompileFromFile(fileName.c_str(),
+		nullptr, nullptr, entryPoint.c_str(), shaderModel.c_str(), compileFlags, 0, &shaderBlob, &errorBlob);
+	handleCompilationFailure(errorBlob, shaderCompilationStatus);
 }
 
 void Shader::handleCompilationFailure(ID3DBlob* errorBlob, HRESULT shaderCompilatoinStatus)

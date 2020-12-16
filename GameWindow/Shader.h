@@ -21,11 +21,12 @@ protected:
 	std::string fileName;
 	ID3DBlob* shaderBlob;
 public:
-	void compile();
+	Shader(std::string name, std::string entryPoint, std::string shaderModel);
+	Shader();
 	void setEntryPoint(std::string entryPoint);
 	void setShaderModel(std::string shaderModel);
 	ID3DBlob* getBlobPointer();
-	void loadShaderFromFile(std::string fileName);
+	void compileShaderFromFile(std::wstring fileName);
 private:
 	void handleCompilationFailure(ID3DBlob* errorBlob, HRESULT shaderCompilatoinStatus);
 };

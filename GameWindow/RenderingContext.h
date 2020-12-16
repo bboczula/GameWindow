@@ -41,8 +41,10 @@ private:
 	void CreateCommandAllocator();
 	void CreateCommandList();
 	void CreateEmptyRootSignature();
+	void CompileShaders();
 	void CreatePipelineState();
 	void CreateVertexBuffer();
+	void CreateSynchronizationObjects();
 	void RecordCommandList();
 	void ResetCommandList();
 	void ExecuteCommandList();
@@ -50,6 +52,9 @@ private:
 	void WaitForThePreviousFrame();
 private:
 	UINT currentFrameIndex;
+	HANDLE fenceEvent;
+	Microsoft::WRL::ComPtr<ID3D12Fence> fence;
+	UINT64 fenceValue;
 	Microsoft::WRL::ComPtr<IDXGIFactory4> factory;
 	Microsoft::WRL::ComPtr<IDXGIAdapter1> adapter;
 	Microsoft::WRL::ComPtr<ID3D12Device> device;
@@ -60,6 +65,11 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator;
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList;
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature;
+	Microsoft::WRL::ComPtr<ID3DBlob> vertexShader;
+	Microsoft::WRL::ComPtr<ID3DBlob> pixelShader;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 	Microsoft::WRL::ComPtr< ID3D12Resource> vertexBuffer;
+	Shader vertexShaderObject;
+	Shader pixelShaderObject;
 };
