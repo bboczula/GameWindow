@@ -26,6 +26,8 @@ public:
 	void setEntryPoint(std::string entryPoint);
 	void setShaderModel(std::string shaderModel);
 	ID3DBlob* getBlobPointer();
+	LPVOID GetBufferPointer();
+	SIZE_T GetBufferSize();
 	void compileShaderFromFile(std::wstring fileName);
 private:
 	void handleCompilationFailure(ID3DBlob* errorBlob, HRESULT shaderCompilatoinStatus);

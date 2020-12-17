@@ -23,6 +23,16 @@ ID3DBlob* Shader::getBlobPointer()
 	return shaderBlob;
 }
 
+LPVOID Shader::GetBufferPointer()
+{
+	return shaderBlob->GetBufferPointer();
+}
+
+SIZE_T Shader::GetBufferSize()
+{
+	return shaderBlob->GetBufferSize();
+}
+
 void Shader::compileShaderFromFile(std::wstring fileName)
 {
 	std::cout << "Shader::compileShaderFromFile()" << std::endl;

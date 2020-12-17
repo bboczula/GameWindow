@@ -283,8 +283,8 @@ void RenderingContext::CreatePipelineState()
 	psoDesc.pRootSignature = rootSignature.Get();
 	//psoDesc.VS = { reinterpret_cast<UINT8*>(vertexShader->GetBufferPointer()), vertexShader->GetBufferSize() };
 	//psoDesc.PS = { reinterpret_cast<UINT8*>(pixelShader->GetBufferPointer()), pixelShader->GetBufferSize() };
-	psoDesc.VS = { reinterpret_cast<UINT8*>(vertexShaderObject.getBlobPointer()->GetBufferPointer()), vertexShaderObject.getBlobPointer()->GetBufferSize() };
-	psoDesc.PS = { reinterpret_cast<UINT8*>(pixelShaderObject.getBlobPointer()->GetBufferPointer()), pixelShaderObject.getBlobPointer()->GetBufferSize() };
+	psoDesc.VS = { reinterpret_cast<UINT8*>(vertexShaderObject.GetBufferPointer()), vertexShaderObject.GetBufferSize() };
+	psoDesc.PS = { reinterpret_cast<UINT8*>(pixelShaderObject.GetBufferPointer()), pixelShaderObject.GetBufferSize() };
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);;
 	psoDesc.DepthStencilState.DepthEnable = FALSE;
