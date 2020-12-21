@@ -23,6 +23,7 @@ RenderingContext::RenderingContext(Astral::WindowContext windowContext) : curren
 	CreatePipelineState();
 	CreateVertexBuffer();
 	CreateSynchronizationObjects();
+	CreateViewport(windowContext.width, windowContext.height);
 }
 
 RenderingContext::~RenderingContext()
@@ -277,23 +278,26 @@ void RenderingContext::CreatePipelineState()
 	D3D12_BLEND_DESC blendDesc;
 	ZeroMemory(&blendDesc, sizeof(blendDesc));
 
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
+	ZeroMemory(&depthStencilDesc, sizeof(depthStencilDesc));
+
 	// Describe and create the graphics pipeline state object (PSO).
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
+	ZeroMemory(&psoDesc, sizeof(psoDesc));
 	psoDesc.InputLayout = { inputElementDescs, _countof(inputElementDescs) };
 	psoDesc.pRootSignature = rootSignature.Get();
-	//psoDesc.VS = { reinterpret_cast<UINT8*>(vertexShader->GetBufferPointer()), vertexShader->GetBufferSize() };
-	//psoDesc.PS = { reinterpret_cast<UINT8*>(pixelShader->GetBufferPointer()), pixelShader->GetBufferSize() };
 	psoDesc.VS = { reinterpret_cast<UINT8*>(vertexShaderObject.GetBufferPointer()), vertexShaderObject.GetBufferSize() };
 	psoDesc.PS = { reinterpret_cast<UINT8*>(pixelShaderObject.GetBufferPointer()), pixelShaderObject.GetBufferSize() };
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);;
-	psoDesc.DepthStencilState.DepthEnable = FALSE;
-	psoDesc.DepthStencilState.StencilEnable = FALSE;
+	psoDesc.DepthStencilState = depthStencilDesc;
 	psoDesc.SampleMask = UINT_MAX;
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.NumRenderTargets = 1;
 	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	psoDesc.SampleDesc.Count = 1;
+	psoDesc.SampleDesc.Quality = 0;
+
 	ThrowIfFailed(device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState)));
 }
 
@@ -315,19 +319,34 @@ void RenderingContext::CreateVertexBuffer()
 	// recommended. Every time the GPU needs it, the upload heap will be marshalled 
 	// over. Please read up on Default Heap usage. An upload heap is used here for 
 	// code simplicity and because there are very few verts to actually transfer.
-	ThrowIfFailed(device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,
-		IID_PPV_ARGS(&vertexBuffer)));
+	D3D12_HEAP_PROPERTIES heapProperties;
+	ZeroMemory(&heapProperties, sizeof(heapProperties));
+	heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+
+	D3D12_RESOURCE_DESC resourceDesc;
+	ZeroMemory(&resourceDesc, sizeof(resourceDesc));
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	resourceDesc.Alignment = 0;
+	resourceDesc.Width = vertexBufferSize;
+	resourceDesc.Height = 1;
+	resourceDesc.DepthOrArraySize = 1;
+	resourceDesc.MipLevels = 1;
+	resourceDesc.Format = DXGI_FORMAT_UNKNOWN;
+	resourceDesc.SampleDesc.Count = 1;
+	resourceDesc.SampleDesc.Quality = 0;
+	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+	ThrowIfFailed(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&vertexBuffer)));
 
 	// Copy the triangle data to the vertex buffer.
-	UINT8* pVertexDataBegin;
+	UINT8* vertexBufferPointers;
 	CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
-	ThrowIfFailed(vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
-	memcpy(pVertexDataBegin, triangleVertices, sizeof(triangleVertices));
+	ThrowIfFailed(vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&vertexBufferPointers)));
+	memcpy(vertexBufferPointers, triangleVertices, sizeof(triangleVertices));
 	vertexBuffer->Unmap(0, nullptr);
 
 	// Initialize the vertex buffer view.
@@ -353,7 +372,7 @@ void RenderingContext::CreateSynchronizationObjects()
 	// Wait for the command list to execute; we are reusing the same command 
 	// list in our main loop but for now, we just want to wait for setup to 
 	// complete before continuing.
-	WaitForThePreviousFrame();
+	//WaitForThePreviousFrame();
 }
 
 void RenderingContext::RecordCommandList()
@@ -364,6 +383,7 @@ void RenderingContext::RecordCommandList()
 	UINT descriptorHandleIncrementSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
 	commandList->SetGraphicsRootSignature(rootSignature.Get());
+	commandList->RSSetViewports(1, &viewport);
 
 	float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	if (currentFrameIndex == 1)
@@ -404,4 +424,17 @@ void RenderingContext::WaitForThePreviousFrame()
 
 	// Get the current Back Buffer index
 	currentFrameIndex = swapChain->GetCurrentBackBufferIndex();
+}
+
+void RenderingContext::CreateViewport(FLOAT width, FLOAT height)
+{
+	LOG_FUNC_NAME;
+
+	ZeroMemory(&viewport, sizeof(viewport));
+	viewport.TopLeftX = 0;
+	viewport.TopLeftY = 0;
+	viewport.Width = width;
+	viewport.Height = height;
+	viewport.MinDepth = D3D12_MIN_DEPTH;
+	viewport.MaxDepth = D3D12_MAX_DEPTH;
 }
