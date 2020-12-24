@@ -50,13 +50,14 @@ private:
 	void ExecuteCommandList();
 	void PresentFrame();
 	void WaitForThePreviousFrame();
-	void CreateViewport(FLOAT width, FLOAT height);
+	void CreateViewportAndScissorsRect(FLOAT width, FLOAT height);
 private:
 	UINT currentFrameIndex;
 	HANDLE fenceEvent;
 	Microsoft::WRL::ComPtr<ID3D12Fence> fence;
 	UINT64 fenceValue;
 	D3D12_VIEWPORT viewport;
+	D3D12_RECT scissorRectangle;
 	Microsoft::WRL::ComPtr<IDXGIFactory4> factory;
 	Microsoft::WRL::ComPtr<IDXGIAdapter1> adapter;
 	Microsoft::WRL::ComPtr<ID3D12Device> device;

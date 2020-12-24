@@ -23,7 +23,7 @@ RenderingContext::RenderingContext(Astral::WindowContext windowContext) : curren
 	CreatePipelineState();
 	CreateVertexBuffer();
 	CreateSynchronizationObjects();
-	CreateViewport(windowContext.width, windowContext.height);
+	CreateViewportAndScissorsRect(windowContext.width, windowContext.height);
 }
 
 RenderingContext::~RenderingContext()
@@ -48,6 +48,7 @@ RenderingContext::~RenderingContext()
 
 void RenderingContext::OnRender()
 {
+	//std::cout << ".";
 	ResetCommandList();
 	RecordCommandList();
 	ExecuteCommandList();
@@ -308,9 +309,9 @@ void RenderingContext::CreateVertexBuffer()
 	// Define the geometry for a triangle.
 	Vertex triangleVertices[] =
 	{
-		{ { 0.0f, 0.25f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
-		{ { 0.25f, -0.25f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
-		{ { -0.25f, -0.25f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } }
+		{ {  0.0f,  0.5f, 0.0f }, { 0.898f, 0.345f, 0.000f, 1.000f } },
+		{ {  0.5f, -0.5f, 0.0f }, { 0.937f, 0.635f, 0.000f, 1.000f } },
+		{ { -0.5f, -0.5f, 0.0f }, { 0.364f, 0.556f, 0.701f, 1.000f } }
 	};
 
 	const UINT vertexBufferSize = sizeof(triangleVertices);
@@ -372,7 +373,7 @@ void RenderingContext::CreateSynchronizationObjects()
 	// Wait for the command list to execute; we are reusing the same command 
 	// list in our main loop but for now, we just want to wait for setup to 
 	// complete before continuing.
-	//WaitForThePreviousFrame();
+	WaitForThePreviousFrame();
 }
 
 void RenderingContext::RecordCommandList()
@@ -384,17 +385,23 @@ void RenderingContext::RecordCommandList()
 
 	commandList->SetGraphicsRootSignature(rootSignature.Get());
 	commandList->RSSetViewports(1, &viewport);
+	commandList->RSSetScissorRects(1, &scissorRectangle);
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[currentFrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
-	float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+	float clearColor[] = { 0.925f, 0.886f, 0.776f, 1.0f };
 	if (currentFrameIndex == 1)
 	{
-		clearColor[0] = 0.1f;
-		clearColor[1] = 0.3f;
 		rtvDescriptorHandle.ptr += SIZE_T(descriptorHandleIncrementSize);
 	}
 	
 	// Record the Clear Screen command on the Command List
+	commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, nullptr);
 	commandList->ClearRenderTargetView(rtvDescriptorHandle, clearColor, 0, nullptr);
+	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
+	commandList->DrawInstanced(3, 1, 0, 0);
+
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[currentFrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
 	// Close the command list
 	ThrowIfFailed(commandList->Close());
@@ -403,7 +410,7 @@ void RenderingContext::RecordCommandList()
 void RenderingContext::ResetCommandList()
 {
 	ThrowIfFailed(commandAllocator->Reset());
-	ThrowIfFailed(commandList->Reset(commandAllocator.Get(), nullptr));
+	ThrowIfFailed(commandList->Reset(commandAllocator.Get(), pipelineState.Get()));
 }
 
 void RenderingContext::ExecuteCommandList()
@@ -414,19 +421,32 @@ void RenderingContext::ExecuteCommandList()
 
 void RenderingContext::PresentFrame()
 {
-	ThrowIfFailed(swapChain->Present(0, 0));
+	ThrowIfFailed(swapChain->Present(1, 0));
 }
 
 void RenderingContext::WaitForThePreviousFrame()
 {
-	// Sleep for 16 miliseconds (roughly 60 FPS)
-	Sleep(33);
+	// WAITING FOR THE FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
+    // This is code implemented as such for simplicity. More advanced samples 
+    // illustrate how to use fences for efficient resource usage.
+
+    // Signal and increment the fence value.
+    const UINT64 tempFence = fenceValue;
+    ThrowIfFailed(graphicsCommandQueue->Signal(fence.Get(), tempFence));
+    fenceValue++;
+
+    // Wait until the previous frame is finished.
+    if (fence->GetCompletedValue() < tempFence)
+    {
+        ThrowIfFailed(fence->SetEventOnCompletion(tempFence, fenceEvent));
+        WaitForSingleObject(fenceEvent, INFINITE);
+    }
 
 	// Get the current Back Buffer index
 	currentFrameIndex = swapChain->GetCurrentBackBufferIndex();
 }
 
-void RenderingContext::CreateViewport(FLOAT width, FLOAT height)
+void RenderingContext::CreateViewportAndScissorsRect(FLOAT width, FLOAT height)
 {
 	LOG_FUNC_NAME;
 
@@ -437,4 +457,10 @@ void RenderingContext::CreateViewport(FLOAT width, FLOAT height)
 	viewport.Height = height;
 	viewport.MinDepth = D3D12_MIN_DEPTH;
 	viewport.MaxDepth = D3D12_MAX_DEPTH;
+
+	ZeroMemory(&scissorRectangle, sizeof(scissorRectangle));
+	scissorRectangle.left = 0;
+	scissorRectangle.right = width;
+	scissorRectangle.top = 0;
+	scissorRectangle.bottom = height;
 }
