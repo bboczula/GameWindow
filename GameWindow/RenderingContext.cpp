@@ -48,9 +48,9 @@ RenderingContext::~RenderingContext()
 
 void RenderingContext::OnRender()
 {
-	//std::cout << ".";
 	ResetCommandList();
 	RecordCommandList();
+	CloseCommandList();
 	ExecuteCommandList();
 	PresentFrame();
 	WaitForThePreviousFrame();
@@ -386,23 +386,29 @@ void RenderingContext::RecordCommandList()
 	commandList->SetGraphicsRootSignature(rootSignature.Get());
 	commandList->RSSetViewports(1, &viewport);
 	commandList->RSSetScissorRects(1, &scissorRectangle);
+	
+	// Set Render Target
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[currentFrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-
-	float clearColor[] = { 0.925f, 0.886f, 0.776f, 1.0f };
 	if (currentFrameIndex == 1)
 	{
 		rtvDescriptorHandle.ptr += SIZE_T(descriptorHandleIncrementSize);
 	}
-	
-	// Record the Clear Screen command on the Command List
 	commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, nullptr);
+
+	// Record the Clear Screen command on the Command List
+	float clearColor[] = { 0.925f, 0.886f, 0.776f, 1.0f };
 	commandList->ClearRenderTargetView(rtvDescriptorHandle, clearColor, 0, nullptr);
+
+	// Draw Triangle
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
 	commandList->DrawInstanced(3, 1, 0, 0);
 
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[currentFrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+}
 
+void RenderingContext::CloseCommandList()
+{
 	// Close the command list
 	ThrowIfFailed(commandList->Close());
 }

@@ -46,6 +46,7 @@ private:
 	void CreateVertexBuffer();
 	void CreateSynchronizationObjects();
 	void RecordCommandList();
+	void CloseCommandList();
 	void ResetCommandList();
 	void ExecuteCommandList();
 	void PresentFrame();
