@@ -386,9 +386,19 @@ void RenderingContext::RecordCommandList()
 	commandList->SetGraphicsRootSignature(rootSignature.Get());
 	commandList->RSSetViewports(1, &viewport);
 	commandList->RSSetScissorRects(1, &scissorRectangle);
+
+	// Setup Resource Barrier
+	D3D12_RESOURCE_BARRIER resourceBarrierBegin;
+	ZeroMemory(&resourceBarrierBegin, sizeof(resourceBarrierBegin));
+	resourceBarrierBegin.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	resourceBarrierBegin.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	resourceBarrierBegin.Transition.pResource = renderTargets[currentFrameIndex].Get();
+	resourceBarrierBegin.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+	resourceBarrierBegin.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	resourceBarrierBegin.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	commandList->ResourceBarrier(1, &resourceBarrierBegin);
 	
 	// Set Render Target
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[currentFrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 	if (currentFrameIndex == 1)
 	{
 		rtvDescriptorHandle.ptr += SIZE_T(descriptorHandleIncrementSize);
@@ -404,7 +414,16 @@ void RenderingContext::RecordCommandList()
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
 	commandList->DrawInstanced(3, 1, 0, 0);
 
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[currentFrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+	// Set Resource Barrier back
+	D3D12_RESOURCE_BARRIER resourceBarrierEnd;
+	ZeroMemory(&resourceBarrierEnd, sizeof(resourceBarrierEnd));
+	resourceBarrierEnd.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	resourceBarrierEnd.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	resourceBarrierEnd.Transition.pResource = renderTargets[currentFrameIndex].Get();
+	resourceBarrierEnd.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	resourceBarrierEnd.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+	resourceBarrierEnd.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	commandList->ResourceBarrier(1, &resourceBarrierEnd);
 }
 
 void RenderingContext::CloseCommandList()
