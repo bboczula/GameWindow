@@ -378,27 +378,25 @@ void RenderingContext::CreateSynchronizationObjects()
 
 void RenderingContext::RecordCommandList()
 {
-	// Clear screen command
-	// Depending on the frame, we should return the proper descriptor for RTV
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHandle = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-	UINT descriptorHandleIncrementSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-
+	// Pipeline setup commands
 	commandList->SetGraphicsRootSignature(rootSignature.Get());
 	commandList->RSSetViewports(1, &viewport);
 	commandList->RSSetScissorRects(1, &scissorRectangle);
 
-	// Setup Resource Barrier
-	D3D12_RESOURCE_BARRIER resourceBarrierBegin;
-	ZeroMemory(&resourceBarrierBegin, sizeof(resourceBarrierBegin));
-	resourceBarrierBegin.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	resourceBarrierBegin.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	resourceBarrierBegin.Transition.pResource = renderTargets[currentFrameIndex].Get();
-	resourceBarrierBegin.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-	resourceBarrierBegin.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	resourceBarrierBegin.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	commandList->ResourceBarrier(1, &resourceBarrierBegin);
+	// Setup and set Resource Barrier
+	//D3D12_RESOURCE_BARRIER resourceBarrier;
+	//ZeroMemory(&resourceBarrier, sizeof(resourceBarrier));
+	//resourceBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	//resourceBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	//resourceBarrier.Transition.pResource = renderTargets[currentFrameIndex].Get();
+	//resourceBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+	//resourceBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	//resourceBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	//commandList->ResourceBarrier(1, &resourceBarrier);
 	
 	// Set Render Target
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHandle = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	UINT descriptorHandleIncrementSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	if (currentFrameIndex == 1)
 	{
 		rtvDescriptorHandle.ptr += SIZE_T(descriptorHandleIncrementSize);
@@ -415,15 +413,9 @@ void RenderingContext::RecordCommandList()
 	commandList->DrawInstanced(3, 1, 0, 0);
 
 	// Set Resource Barrier back
-	D3D12_RESOURCE_BARRIER resourceBarrierEnd;
-	ZeroMemory(&resourceBarrierEnd, sizeof(resourceBarrierEnd));
-	resourceBarrierEnd.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	resourceBarrierEnd.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	resourceBarrierEnd.Transition.pResource = renderTargets[currentFrameIndex].Get();
-	resourceBarrierEnd.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	resourceBarrierEnd.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-	resourceBarrierEnd.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	commandList->ResourceBarrier(1, &resourceBarrierEnd);
+	//resourceBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	//resourceBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+	//commandList->ResourceBarrier(1, &resourceBarrier);
 }
 
 void RenderingContext::CloseCommandList()
