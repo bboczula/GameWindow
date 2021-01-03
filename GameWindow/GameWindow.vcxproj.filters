@@ -40,6 +40,9 @@
     <ClInclude Include="d3dx12.h">
       <Filter>Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Gamepad.cpp">
@@ -58,6 +61,9 @@
       <Filter>Window</Filter>
     </ClCompile>
     <ClCompile Include="Shader.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
   </ItemGroup>

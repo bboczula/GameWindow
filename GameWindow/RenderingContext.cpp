@@ -418,7 +418,6 @@ void RenderingContext::RecordCommandList(float deltaTime)
 	// Update the 32-bit constants
 	//std::cout << deltaTime << " ";
 	cumTime += deltaTime;
-	std::cout << cumTime << std::endl;
 	float temp[1];
 	temp[0] = cumTime;
 	commandList->SetGraphicsRoot32BitConstants(0, 1, &temp, 0);

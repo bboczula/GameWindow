@@ -29,7 +29,6 @@ void Astral::Game::start()
 	while (1)
 	{
 		// Start the timer
-		//timer.Start();
 		auto t1 = std::chrono::high_resolution_clock::now();
 
 		//// If HWND parameter is NULL, then function retrieves messages for any window that belongs to current thread,
@@ -60,7 +59,6 @@ void Astral::Game::start()
 		}
 
 		// Stop the timer
-		//timer.Stop();
 		auto t2 = std::chrono::high_resolution_clock::now();
 
 		auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
