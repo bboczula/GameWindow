@@ -21,9 +21,6 @@
     <ClInclude Include="Input.h">
       <Filter>Components</Filter>
     </ClInclude>
-    <ClInclude Include="Timer.h">
-      <Filter>Components</Filter>
-    </ClInclude>
     <ClInclude Include="RenderingContext.h">
       <Filter>Rendering</Filter>
     </ClInclude>
@@ -49,9 +46,6 @@
       <Filter>Components</Filter>
     </ClCompile>
     <ClCompile Include="Input.cpp">
-      <Filter>Components</Filter>
-    </ClCompile>
-    <ClCompile Include="Timer.cpp">
       <Filter>Components</Filter>
     </ClCompile>
     <ClCompile Include="RenderingContext.cpp">

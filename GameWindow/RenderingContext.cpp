@@ -46,10 +46,10 @@ RenderingContext::~RenderingContext()
 	RELEASE(factory);
 }
 
-void RenderingContext::OnRender()
+void RenderingContext::OnRender(float deltaTime)
 {
 	ResetCommandList();
-	RecordCommandList();
+	RecordCommandList(deltaTime);
 	CloseCommandList();
 	ExecuteCommandList();
 	PresentFrame();
@@ -238,27 +238,34 @@ void RenderingContext::CreateEmptyRootSignature()
 {
 	LOG_FUNC_NAME;
 
+	D3D12_ROOT_PARAMETER rootParameters[1];
+	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	rootParameters[0].Constants.Num32BitValues = 1;
+	rootParameters[0].Constants.RegisterSpace = 0;
+	rootParameters[0].Constants.ShaderRegister = 0;
+	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
 	D3D12_ROOT_SIGNATURE_DESC myRootSignatureDesc;
-	myRootSignatureDesc.NumParameters = 0;
-	myRootSignatureDesc.pParameters = nullptr;
+	myRootSignatureDesc.NumParameters = 1;
+	myRootSignatureDesc.pParameters = rootParameters;
 	myRootSignatureDesc.NumStaticSamplers = 0;
 	myRootSignatureDesc.pStaticSamplers = nullptr;
 	myRootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
 	Microsoft::WRL::ComPtr<ID3DBlob> signature;
 	Microsoft::WRL::ComPtr<ID3DBlob> error;
-	ThrowIfFailed(D3D12SerializeRootSignature(&myRootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
+	ThrowIfFailed(D3D12SerializeRootSignature(&myRootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1_0, &signature, &error));
 	ThrowIfFailed(device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rootSignature)));
 }
 
 void RenderingContext::CompileShaders()
 {
 	vertexShaderObject.setEntryPoint("VSMain");
-	vertexShaderObject.setShaderModel("vs_5_0");
+	vertexShaderObject.setShaderModel("vs_5_1");
 	vertexShaderObject.compileShaderFromFile(L"C:\\Users\\bboczula\\source\\repos\\GameWindow\\GameWindow\\shaders.hlsl");
 
 	pixelShaderObject.setEntryPoint("PSMain");
-	pixelShaderObject.setShaderModel("ps_5_0");
+	pixelShaderObject.setShaderModel("ps_5_1");
 	pixelShaderObject.compileShaderFromFile(L"C:\\Users\\bboczula\\source\\repos\\GameWindow\\GameWindow\\shaders.hlsl");
 }
 
@@ -376,10 +383,11 @@ void RenderingContext::CreateSynchronizationObjects()
 	WaitForThePreviousFrame();
 }
 
-void RenderingContext::RecordCommandList()
+void RenderingContext::RecordCommandList(float deltaTime)
 {
 	// Pipeline setup commands
 	commandList->SetGraphicsRootSignature(rootSignature.Get());
+	commandList->SetPipelineState(pipelineState.Get());
 	commandList->RSSetViewports(1, &viewport);
 	commandList->RSSetScissorRects(1, &scissorRectangle);
 
@@ -406,6 +414,14 @@ void RenderingContext::RecordCommandList()
 	// Record the Clear Screen command on the Command List
 	float clearColor[] = { 0.925f, 0.886f, 0.776f, 1.0f };
 	commandList->ClearRenderTargetView(rtvDescriptorHandle, clearColor, 0, nullptr);
+
+	// Update the 32-bit constants
+	//std::cout << deltaTime << " ";
+	cumTime += deltaTime;
+	std::cout << cumTime << std::endl;
+	float temp[1];
+	temp[0] = cumTime;
+	commandList->SetGraphicsRoot32BitConstants(0, 1, &temp, 0);
 
 	// Draw Triangle
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

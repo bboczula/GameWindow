@@ -28,7 +28,7 @@ class RenderingContext
 public:
 	RenderingContext(Astral::WindowContext windowContext);
 	~RenderingContext();
-	void OnRender();
+	void OnRender(float deltaTime);
 private:
 	void CreateDxgiFactory();
 	void EnumerateAdapters();
@@ -45,7 +45,7 @@ private:
 	void CreatePipelineState();
 	void CreateVertexBuffer();
 	void CreateSynchronizationObjects();
-	void RecordCommandList();
+	void RecordCommandList(float deltaTime);
 	void CloseCommandList();
 	void ResetCommandList();
 	void ExecuteCommandList();
@@ -76,4 +76,5 @@ private:
 	Microsoft::WRL::ComPtr< ID3D12Resource> vertexBuffer;
 	Shader vertexShaderObject;
 	Shader pixelShaderObject;
+	float cumTime;
 };

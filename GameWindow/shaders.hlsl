@@ -9,6 +9,11 @@
 //
 //*********************************************************
 
+cbuffer PerFrameData : register(b0)
+{
+    float deltaTime;
+};
+
 struct PSInput
 {
     float4 position : SV_POSITION;
@@ -27,5 +32,7 @@ PSInput VSMain(float4 position : POSITION, float4 color : COLOR)
 
 float4 PSMain(PSInput input) : SV_TARGET
 {
-    return input.color;
+    float4 finalColor = input.color;
+    finalColor.x *= abs(sin(deltaTime / 1000.0f));
+    return finalColor;
 }

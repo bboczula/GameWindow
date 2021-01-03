@@ -5,10 +5,10 @@
 #include <windowsx.h>
 #include <stdint.h>
 #include <string>
+#include <chrono>
 
 #include "Window.h"
 #include "IWindowComponent.h"
-#include "Timer.h"
 #include "RenderingContext.h"
 
 namespace Astral
@@ -21,8 +21,8 @@ namespace Astral
 		void start();
 	protected:
 		Window window;
-		Timer timer;
 		RenderingContext* renderContext;
+		float frameTime;
 		virtual void Initialization();
 		virtual void Logic();
 		virtual void Rendering();

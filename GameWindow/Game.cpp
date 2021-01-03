@@ -28,7 +28,10 @@ void Astral::Game::start()
 	MSG msg{ 0 };
 	while (1)
 	{
-		//timer.start();
+		// Start the timer
+		//timer.Start();
+		auto t1 = std::chrono::high_resolution_clock::now();
+
 		//// If HWND parameter is NULL, then function retrieves messages for any window that belongs to current thread,
 		//// so both window messages and thread messages.
 		bool isMessageAvailable = PeekMessage(&msg, NULL, 0, 0, PM_REMOVE);
@@ -53,11 +56,15 @@ void Astral::Game::start()
 		}
 		else
 		{
-			Logic();
 			Rendering();
 		}
 
-		timer.stop();
+		// Stop the timer
+		//timer.Stop();
+		auto t2 = std::chrono::high_resolution_clock::now();
+
+		auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+		frameTime = elapsed_time;
 	}
 
 	LOG("BaseWindow::start() - finished");
@@ -73,5 +80,5 @@ void Astral::Game::Logic()
 
 void Astral::Game::Rendering()
 {
-	renderContext->OnRender();
+	renderContext->OnRender(frameTime);
 }
