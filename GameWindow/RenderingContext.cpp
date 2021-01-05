@@ -4,7 +4,7 @@
 
 #define RELEASE(comObject) if(comObject) { comObject->Release(); comObject = nullptr; }
 
-RenderingContext::RenderingContext(Astral::WindowContext windowContext) : currentFrameIndex(0)
+RenderingContext::RenderingContext(Astral::WindowContext windowContext) : currentFrameIndex(0), mainCamera(windowContext.width / windowContext.height)
 {
 	LOG_FUNC_NAME;
 
@@ -240,7 +240,7 @@ void RenderingContext::CreateEmptyRootSignature()
 
 	D3D12_ROOT_PARAMETER rootParameters[1];
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-	rootParameters[0].Constants.Num32BitValues = 1;
+	rootParameters[0].Constants.Num32BitValues = 16;
 	rootParameters[0].Constants.RegisterSpace = 0;
 	rootParameters[0].Constants.ShaderRegister = 0;
 	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
@@ -420,7 +420,24 @@ void RenderingContext::RecordCommandList(float deltaTime)
 	cumTime += deltaTime;
 	float temp[1];
 	temp[0] = cumTime;
-	commandList->SetGraphicsRoot32BitConstants(0, 1, &temp, 0);
+	//commandList->SetGraphicsRoot32BitConstants(0, 1, &temp, 0);
+
+	// Set Constant Buffer for the camera
+	DirectX::XMFLOAT4X4 tempMatrix = mainCamera.getDxViewProjectionMatrix();
+	//DirectX::XMMATRIX tempMatrix = DirectX::XMMatrixIdentity();
+	//tempMatrix = DirectX::XMMatrixTranspose(tempMatrix);
+	//tempMatrix._11 = 11.0f;
+	//tempMatrix._12 = 12.0f;
+	//tempMatrix._13 = 13.0f;
+
+	//std::cout << "view" << std::endl;
+	//std::cout << "( " << tempMatrix._11 << " " << tempMatrix._12 << " " << tempMatrix._13 << " " << tempMatrix._14 << " )" << std::endl;
+	//std::cout << "( " << tempMatrix._21 << " " << tempMatrix._22 << " " << tempMatrix._23 << " " << tempMatrix._24 << " )" << std::endl;
+	//std::cout << "( " << tempMatrix._31 << " " << tempMatrix._32 << " " << tempMatrix._33 << " " << tempMatrix._34 << " )" << std::endl;
+	//std::cout << "( " << tempMatrix._41 << " " << tempMatrix._42 << " " << tempMatrix._43 << " " << tempMatrix._44 << " )" << std::endl;
+
+	commandList->SetGraphicsRoot32BitConstants(0, 16, &tempMatrix, 0);
+
 
 	// Draw Triangle
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

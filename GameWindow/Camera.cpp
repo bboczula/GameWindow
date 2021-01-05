@@ -1,23 +1,21 @@
 #include "Camera.h"
 
+#define LOG_FUNC_NAME std::cout << __func__ << "()" << std::endl
+
 Camera::Camera(float screenAspectRatio)
-	: aspectRatio(screenAspectRatio), fieldOfView(39.6), nearPlane(0.01f), farPlane(1000.0f), dxPosition(0.0f, 1.6f, 0.00f), dxTarget(0.0f, 0.0f, 0.0f), dxUp(0.0f, 1.0f, 0.0f)
+	: aspectRatio(screenAspectRatio), fieldOfView(39.6), nearPlane(0.01f), farPlane(1000.0f), dxPosition(0.0f, 0.0f, -2.0f), dxTarget(0.0f, 0.0f, 0.0f), dxUp(0.0f, 1.0f, 0.0f)
 {
+	LOG_FUNC_NAME;
+
 	// Update View Matrix
 	DirectX::XMVECTOR targetVector = DirectX::XMLoadFloat3(&dxTarget);
 	DirectX::XMVECTOR positionVector = DirectX::XMLoadFloat3(&dxPosition);
-	targetVector = positionVector + targetVector;
-	DirectX::XMStoreFloat3(&dxTarget, targetVector);
-
-	// Update Target
-
-
 	DirectX::XMVECTOR upVector = DirectX::XMLoadFloat3(&dxUp);
 	DirectX::XMMATRIX viewMatrix = DirectX::XMMatrixLookAtLH(positionVector, targetVector, upVector);
 	DirectX::XMStoreFloat4x4(&dxView, viewMatrix);
 
 #ifdef DEBUG
-	std::cout << view << std::endl;
+	std::cout << "view" << std::endl;
 	std::cout << "( " << dxView._11 << " " << dxView._12 << " " << dxView._13 << " " << dxView._14 << " )" << std::endl;
 	std::cout << "( " << dxView._21 << " " << dxView._22 << " " << dxView._23 << " " << dxView._24 << " )" << std::endl;
 	std::cout << "( " << dxView._31 << " " << dxView._32 << " " << dxView._33 << " " << dxView._34 << " )" << std::endl;
@@ -29,7 +27,7 @@ Camera::Camera(float screenAspectRatio)
 	DirectX::XMStoreFloat4x4(&dxProjection, projectionMatrix);
 
 #ifdef DEBUG
-	std::cout << projection << std::endl;
+	std::cout << "projection" << std::endl;
 	std::cout << "( " << dxProjection._11 << " " << dxProjection._12 << " " << dxProjection._13 << " " << dxProjection._14 << " )" << std::endl;
 	std::cout << "( " << dxProjection._21 << " " << dxProjection._22 << " " << dxProjection._23 << " " << dxProjection._24 << " )" << std::endl;
 	std::cout << "( " << dxProjection._31 << " " << dxProjection._32 << " " << dxProjection._33 << " " << dxProjection._34 << " )" << std::endl;

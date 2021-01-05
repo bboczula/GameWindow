@@ -12,6 +12,7 @@
 #include "Utils.h"
 #include "Shader.h"
 #include "d3dx12.h"
+#include "Camera.h"
 
 #pragma comment(lib, "dxgi.lib")
 
@@ -77,4 +78,5 @@ private:
 	Shader vertexShaderObject;
 	Shader pixelShaderObject;
 	float cumTime;
+	Camera mainCamera;
 };
