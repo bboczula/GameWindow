@@ -3,7 +3,7 @@
 #define LOG_FUNC_NAME std::cout << __func__ << "()" << std::endl
 
 Camera::Camera(float screenAspectRatio)
-	: aspectRatio(screenAspectRatio), fieldOfView(39.6), nearPlane(0.01f), farPlane(1000.0f), dxPosition(0.0f, 0.0f, -2.0f), dxTarget(0.0f, 0.0f, 0.0f), dxUp(0.0f, 1.0f, 0.0f)
+	: aspectRatio(screenAspectRatio), fieldOfView(39.6), nearPlane(0.01f), farPlane(1000.0f), dxPosition(2.0f, 2.0f, -2.0f), dxTarget(0.0f, 0.0f, 0.0f), dxUp(0.0f, 1.0f, 0.0f)
 {
 	LOG_FUNC_NAME;
 

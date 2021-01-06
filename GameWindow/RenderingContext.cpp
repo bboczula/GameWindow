@@ -4,7 +4,7 @@
 
 #define RELEASE(comObject) if(comObject) { comObject->Release(); comObject = nullptr; }
 
-RenderingContext::RenderingContext(Astral::WindowContext windowContext) : currentFrameIndex(0), mainCamera(windowContext.width / windowContext.height)
+RenderingContext::RenderingContext(Astral::WindowContext windowContext) : currentFrameIndex(0), mainCamera((float)windowContext.width / (float)windowContext.height)
 {
 	LOG_FUNC_NAME;
 
@@ -15,13 +15,16 @@ RenderingContext::RenderingContext(Astral::WindowContext windowContext) : curren
 	CreateCommandQueue();
 	CreateSwapChain(windowContext);
 	CreateRtvDescriptorHeap();
+	CreateDsvDescriptorHeap();
 	CreateRenderTargetViews();
+	CreateDepthStencilBuffer(windowContext);
 	CreateCommandAllocator();
 	CreateCommandList();
 	CreateEmptyRootSignature();
 	CompileShaders();
 	CreatePipelineState();
 	CreateVertexBuffer();
+	CreateIndexBuffer();
 	CreateSynchronizationObjects();
 	CreateViewportAndScissorsRect(windowContext.width, windowContext.height);
 }
@@ -201,6 +204,19 @@ void RenderingContext::CreateRtvDescriptorHeap()
 	ThrowIfFailed(device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvDescriptorHeap)));
 }
 
+void RenderingContext::CreateDsvDescriptorHeap()
+{
+	LOG_FUNC_NAME;
+
+	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
+	// I think we only need one descriptor
+	rtvHeapDesc.NumDescriptors = 1;
+	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+
+	ThrowIfFailed(device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&dsvDescriptorHeap)));
+}
+
 void RenderingContext::CreateRenderTargetViews()
 {
 	LOG_FUNC_NAME;
@@ -217,6 +233,55 @@ void RenderingContext::CreateRenderTargetViews()
 		device->CreateRenderTargetView(renderTargets[i].Get(), nullptr, rtvDescriptorHandle);
 		rtvDescriptorHandle.ptr += SIZE_T(descriptorHandleIncrementSize);
 	}
+}
+
+void RenderingContext::CreateDepthStencilBuffer(const Astral::WindowContext& windowContext)
+{
+	LOG_FUNC_NAME;
+
+	// We need to actually create a new resource, a texture of the same dimensions as the Render Target
+	// We will create a commited resource, as usual, because this is the easiest.
+	// This time we actually need a 2D texture
+
+	D3D12_HEAP_PROPERTIES heapProperties;
+	ZeroMemory(&heapProperties, sizeof(heapProperties));
+	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT; // For some reason, this is important, the UPLOAD doesn't work, crashes the system
+	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+
+	D3D12_RESOURCE_DESC resourceDesc;
+	ZeroMemory(&resourceDesc, sizeof(resourceDesc));
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	resourceDesc.Alignment = 0;
+	resourceDesc.Width = windowContext.width;
+	resourceDesc.Height = windowContext.height;
+	resourceDesc.DepthOrArraySize = 1;
+	resourceDesc.MipLevels = 1;
+	resourceDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	resourceDesc.SampleDesc.Count = 1;
+	resourceDesc.SampleDesc.Quality = 0;
+	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+	D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
+	depthOptimizedClearValue.Format = DXGI_FORMAT_D32_FLOAT;
+	depthOptimizedClearValue.DepthStencil.Depth = 1.0f;
+	depthOptimizedClearValue.DepthStencil.Stencil = 0;
+
+	
+	ThrowIfFailed(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc,
+		D3D12_RESOURCE_STATE_DEPTH_WRITE, &depthOptimizedClearValue, IID_PPV_ARGS(&depthBuffer)));
+
+	D3D12_DEPTH_STENCIL_VIEW_DESC dsViewDesk;
+	ZeroMemory(&dsViewDesk, sizeof(D3D12_DEPTH_STENCIL_VIEW_DESC));
+	dsViewDesk.Format = DXGI_FORMAT_D32_FLOAT;
+	dsViewDesk.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	dsViewDesk.Flags = D3D12_DSV_FLAG_NONE;
+	dsViewDesk.Texture2D.MipSlice = 0;
+
+	D3D12_CPU_DESCRIPTOR_HANDLE heapHandleDsv = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+
+	device->CreateDepthStencilView(depthBuffer.Get(), &dsViewDesk, heapHandleDsv);
 }
 
 void RenderingContext::CreateCommandAllocator()
@@ -282,12 +347,39 @@ void RenderingContext::CreatePipelineState()
 
 	D3D12_RASTERIZER_DESC rasterizerDesc;
 	ZeroMemory(&rasterizerDesc, sizeof(rasterizerDesc));
+	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+	rasterizerDesc.FrontCounterClockwise = FALSE;
+	rasterizerDesc.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
+	rasterizerDesc.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
+	rasterizerDesc.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+	rasterizerDesc.DepthClipEnable = TRUE;
+	rasterizerDesc.MultisampleEnable = FALSE;
+	rasterizerDesc.AntialiasedLineEnable = FALSE;
+	rasterizerDesc.ForcedSampleCount = 0;
+	rasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
 	D3D12_BLEND_DESC blendDesc;
 	ZeroMemory(&blendDesc, sizeof(blendDesc));
+	blendDesc.AlphaToCoverageEnable = FALSE;
+	blendDesc.IndependentBlendEnable = FALSE;
+	blendDesc.RenderTarget[0].BlendEnable = FALSE;
+	blendDesc.RenderTarget[0].LogicOpEnable = FALSE;
+	blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
+	blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+	blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].LogicOp = D3D12_LOGIC_OP_NOOP;
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
 	D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
 	ZeroMemory(&depthStencilDesc, sizeof(depthStencilDesc));
+	depthStencilDesc.DepthEnable = TRUE;
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	depthStencilDesc.StencilEnable = FALSE;
 
 	// Describe and create the graphics pipeline state object (PSO).
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
@@ -296,8 +388,8 @@ void RenderingContext::CreatePipelineState()
 	psoDesc.pRootSignature = rootSignature.Get();
 	psoDesc.VS = { reinterpret_cast<UINT8*>(vertexShaderObject.GetBufferPointer()), vertexShaderObject.GetBufferSize() };
 	psoDesc.PS = { reinterpret_cast<UINT8*>(pixelShaderObject.GetBufferPointer()), pixelShaderObject.GetBufferSize() };
-	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);;
+	psoDesc.RasterizerState = rasterizerDesc;
+	psoDesc.BlendState = blendDesc;
 	psoDesc.DepthStencilState = depthStencilDesc;
 	psoDesc.SampleMask = UINT_MAX;
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
@@ -321,7 +413,21 @@ void RenderingContext::CreateVertexBuffer()
 		{ { -0.5f, -0.5f, 0.0f }, { 0.364f, 0.556f, 0.701f, 1.000f } }
 	};
 
-	const UINT vertexBufferSize = sizeof(triangleVertices);
+	// Define the geometry for a cube
+	Vertex cubeVertices[] =
+	{
+		{ { -0.500000,  0.500000,  0.500000 }, { 0.522f, 1.000f, 0.780f, 1.000f } },
+		{ { -0.500000, -0.500000,  0.500000 }, { 0.161f, 0.451f, 0.451f, 1.000f } },
+		{ { -0.500000,  0.500000, -0.500000 }, { 1.000f, 0.522f, 0.322f, 1.000f } },
+		{ { -0.500000, -0.500000, -0.500000 }, { 0.314f, 0.188f, 0.278f, 1.000f } },
+		{ {  0.500000,  0.500000,  0.500000 }, { 0.522f, 1.000f, 0.780f, 1.000f } },
+		{ {  0.500000, -0.500000,  0.500000 }, { 0.161f, 0.451f, 0.451f, 1.000f } },
+		{ {  0.500000,  0.500000, -0.500000 }, { 1.000f, 0.522f, 0.322f, 1.000f } },
+		{ {  0.500000, -0.500000, -0.500000 }, { 0.314f, 0.188f, 0.278f, 1.000f } },
+	};
+
+	// const UINT vertexBufferSize = sizeof(triangleVertices);
+	const UINT vertexBufferSize = sizeof(cubeVertices);
 
 	// Note: using upload heaps to transfer static data like vert buffers is not 
 	// recommended. Every time the GPU needs it, the upload heap will be marshalled 
@@ -354,13 +460,76 @@ void RenderingContext::CreateVertexBuffer()
 	UINT8* vertexBufferPointers;
 	CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
 	ThrowIfFailed(vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&vertexBufferPointers)));
-	memcpy(vertexBufferPointers, triangleVertices, sizeof(triangleVertices));
+	// memcpy(vertexBufferPointers, triangleVertices, sizeof(triangleVertices));
+	memcpy(vertexBufferPointers, cubeVertices, sizeof(cubeVertices));
 	vertexBuffer->Unmap(0, nullptr);
 
 	// Initialize the vertex buffer view.
 	vertexBufferView.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
 	vertexBufferView.StrideInBytes = sizeof(Vertex);
 	vertexBufferView.SizeInBytes = vertexBufferSize;
+}
+
+void RenderingContext::CreateIndexBuffer()
+{
+	LOG_FUNC_NAME;
+
+	DWORD indices[] =
+	{
+		4, 2, 0,
+		2, 7, 3,
+		6, 5, 7,
+		1, 7, 5,
+		0, 3, 1,
+		4, 1, 5,
+		4, 6, 2,
+		2, 6, 7,
+		6, 4, 5,
+		1, 3, 7,
+		0, 2, 3,
+		4, 0, 1
+	};
+
+	const UINT indexBufferSize = sizeof(indices);
+
+	// Note: using upload heaps to transfer static data like vert buffers is not 
+	// recommended. Every time the GPU needs it, the upload heap will be marshalled 
+	// over. Please read up on Default Heap usage. An upload heap is used here for 
+	// code simplicity and because there are very few verts to actually transfer.
+	D3D12_HEAP_PROPERTIES heapProperties;
+	ZeroMemory(&heapProperties, sizeof(heapProperties));
+	heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+
+	D3D12_RESOURCE_DESC resourceDesc;
+	ZeroMemory(&resourceDesc, sizeof(resourceDesc));
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	resourceDesc.Alignment = 0;
+	resourceDesc.Width = indexBufferSize;
+	resourceDesc.Height = 1;
+	resourceDesc.DepthOrArraySize = 1;
+	resourceDesc.MipLevels = 1;
+	resourceDesc.Format = DXGI_FORMAT_UNKNOWN;
+	resourceDesc.SampleDesc.Count = 1;
+	resourceDesc.SampleDesc.Quality = 0;
+	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+	ThrowIfFailed(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&indexBuffer)));
+
+	// Copy the triangle data to the vertex buffer.
+	UINT8* indexBufferPointers;
+	CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
+	ThrowIfFailed(indexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&indexBufferPointers)));
+	memcpy(indexBufferPointers, indices, sizeof(indices));
+	indexBuffer->Unmap(0, nullptr);
+
+	// Initialize the vertex buffer view.
+	indexBufferView.BufferLocation = indexBuffer->GetGPUVirtualAddress();
+	indexBufferView.SizeInBytes = 12 * 3 * 32;
+	indexBufferView.Format = DXGI_FORMAT_R32_UINT;
 }
 
 void RenderingContext::CreateSynchronizationObjects()
@@ -402,18 +571,20 @@ void RenderingContext::RecordCommandList(float deltaTime)
 	//resourceBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 	//commandList->ResourceBarrier(1, &resourceBarrier);
 	
-	// Set Render Target
+	// Set Render Target and Depth Buffer
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHandle = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 	UINT descriptorHandleIncrementSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvDescriptorHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 	if (currentFrameIndex == 1)
 	{
 		rtvDescriptorHandle.ptr += SIZE_T(descriptorHandleIncrementSize);
 	}
-	commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, nullptr);
+	commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 
-	// Record the Clear Screen command on the Command List
-	float clearColor[] = { 0.925f, 0.886f, 0.776f, 1.0f };
+	// Record the Clear Screen command on the Command List and Clear Depth Buffer
+	float clearColor[] = { 0.224f, 0.224f, 0.227f, 1.0f };
 	commandList->ClearRenderTargetView(rtvDescriptorHandle, clearColor, 0, nullptr);
+	commandList->ClearDepthStencilView(dsvDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 	// Update the 32-bit constants
 	//std::cout << deltaTime << " ";
@@ -442,7 +613,13 @@ void RenderingContext::RecordCommandList(float deltaTime)
 	// Draw Triangle
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
-	commandList->DrawInstanced(3, 1, 0, 0);
+	
+	// For triangle
+	// commandList->DrawInstanced(3, 1, 0, 0);
+
+	// For cube
+	commandList->IASetIndexBuffer(&indexBufferView);
+	commandList->DrawIndexedInstanced(12 * 3, 1, 0, 0, 0);
 
 	// Set Resource Barrier back
 	//resourceBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;

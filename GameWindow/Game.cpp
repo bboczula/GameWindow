@@ -55,6 +55,7 @@ void Astral::Game::start()
 		}
 		else
 		{
+			Logic();
 			Rendering();
 		}
 
