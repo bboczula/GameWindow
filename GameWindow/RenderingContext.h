@@ -39,6 +39,7 @@ private:
 	void CreateSwapChain(const Astral::WindowContext& windowContext);
 	void CreateRtvDescriptorHeap();
 	void CreateDsvDescriptorHeap();
+	void CreateCbvDescriptorHeap();
 	void CreateRenderTargetViews();
 	void CreateDepthStencilBuffer(const Astral::WindowContext& windowContext);
 	void CreateCommandAllocator();
@@ -48,7 +49,9 @@ private:
 	void CreatePipelineState();
 	void CreateVertexBuffer();
 	void CreateIndexBuffer();
+	void CreatePerObjectConstantBuffer();
 	void CreateSynchronizationObjects();
+	void UpdateRotation();
 	void RecordCommandList(float deltaTime);
 	void CloseCommandList();
 	void ResetCommandList();
@@ -70,6 +73,7 @@ private:
 	Microsoft::WRL::ComPtr<IDXGISwapChain3> swapChain;	// Needed "3" to get current buffer index
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> cbvDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12Resource> renderTargets[FRAME_COUNT];
 	Microsoft::WRL::ComPtr< ID3D12Resource> depthBuffer;
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator;
@@ -82,8 +86,10 @@ private:
 	Microsoft::WRL::ComPtr< ID3D12Resource> vertexBuffer;
 	D3D12_INDEX_BUFFER_VIEW indexBufferView;
 	Microsoft::WRL::ComPtr< ID3D12Resource> indexBuffer;
+	Microsoft::WRL::ComPtr< ID3D12Resource> perObjectBuffer;
 	Shader vertexShaderObject;
 	Shader pixelShaderObject;
 	float cumTime;
 	Camera mainCamera;
+	unsigned int angle;
 };

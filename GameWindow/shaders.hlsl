@@ -11,9 +11,13 @@
 
 cbuffer PerFrameData : register(b0)
 {
-//    float deltaTime;
     float4x4 viewProjection;
 };
+
+cbuffer PerObjectData : register(b1)
+{
+    float4x4 world;
+}
 
 struct PSInput
 {
@@ -25,8 +29,7 @@ PSInput VSMain(float3 position : POSITION, float4 color : COLOR)
 {
     PSInput result;
 
-    result.position = mul(viewProjection, float4(position, 1.0f));
-    //result.position = position;
+    result.position = mul(viewProjection, mul(world, float4(position, 1.0f)));
     result.color = color;
 
     return result;
@@ -35,6 +38,5 @@ PSInput VSMain(float3 position : POSITION, float4 color : COLOR)
 float4 PSMain(PSInput input) : SV_TARGET
 {
     float4 finalColor = input.color;
-   // finalColor.x *= abs(sin(deltaTime / 1000.0f));
     return finalColor;
 }

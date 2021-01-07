@@ -14,8 +14,12 @@ RenderingContext::RenderingContext(Astral::WindowContext windowContext) : curren
 	CreateDevice();
 	CreateCommandQueue();
 	CreateSwapChain(windowContext);
+
+	// Create Descriptor Heaps
 	CreateRtvDescriptorHeap();
 	CreateDsvDescriptorHeap();
+	CreateCbvDescriptorHeap();
+
 	CreateRenderTargetViews();
 	CreateDepthStencilBuffer(windowContext);
 	CreateCommandAllocator();
@@ -25,6 +29,7 @@ RenderingContext::RenderingContext(Astral::WindowContext windowContext) : curren
 	CreatePipelineState();
 	CreateVertexBuffer();
 	CreateIndexBuffer();
+	CreatePerObjectConstantBuffer();
 	CreateSynchronizationObjects();
 	CreateViewportAndScissorsRect(windowContext.width, windowContext.height);
 }
@@ -51,6 +56,7 @@ RenderingContext::~RenderingContext()
 
 void RenderingContext::OnRender(float deltaTime)
 {
+	UpdateRotation();
 	ResetCommandList();
 	RecordCommandList(deltaTime);
 	CloseCommandList();
@@ -143,6 +149,15 @@ void RenderingContext::CreateDevice()
 {
 	LOG_FUNC_NAME;
 
+#if 0
+	Microsoft::WRL::ComPtr<ID3D12Debug> spDebugController0;
+	Microsoft::WRL::ComPtr<ID3D12Debug1> spDebugController1;
+	ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&spDebugController0)));
+	ThrowIfFailed(spDebugController0->QueryInterface(IID_PPV_ARGS(&spDebugController1)));
+	spDebugController1->EnableDebugLayer();
+	spDebugController1->SetEnableGPUBasedValidation(true);
+#endif
+
 	ThrowIfFailed(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(device.GetAddressOf())));
 }
 
@@ -209,12 +224,24 @@ void RenderingContext::CreateDsvDescriptorHeap()
 	LOG_FUNC_NAME;
 
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-	// I think we only need one descriptor
 	rtvHeapDesc.NumDescriptors = 1;
 	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
 	ThrowIfFailed(device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&dsvDescriptorHeap)));
+}
+
+void RenderingContext::CreateCbvDescriptorHeap()
+{
+	LOG_FUNC_NAME;
+
+	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
+	// I think we only need one descriptor since we have one object
+	rtvHeapDesc.NumDescriptors = 1;
+	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE; // THis is important for CBV
+
+	ThrowIfFailed(device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&cbvDescriptorHeap)));
 }
 
 void RenderingContext::CreateRenderTargetViews()
@@ -271,6 +298,7 @@ void RenderingContext::CreateDepthStencilBuffer(const Astral::WindowContext& win
 	
 	ThrowIfFailed(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc,
 		D3D12_RESOURCE_STATE_DEPTH_WRITE, &depthOptimizedClearValue, IID_PPV_ARGS(&depthBuffer)));
+	ThrowIfFailed(depthBuffer->SetName(L"DepthBuffer"));
 
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsViewDesk;
 	ZeroMemory(&dsViewDesk, sizeof(D3D12_DEPTH_STENCIL_VIEW_DESC));
@@ -303,15 +331,34 @@ void RenderingContext::CreateEmptyRootSignature()
 {
 	LOG_FUNC_NAME;
 
-	D3D12_ROOT_PARAMETER rootParameters[1];
+	// create a descriptor range (descriptor table) and fill it out
+// this is a range of descriptors inside a descriptor heap
+	D3D12_DESCRIPTOR_RANGE  descriptorTableRanges[1]; // only one range right now
+	descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV; // this is a range of constant buffer views (descriptors)
+	descriptorTableRanges[0].NumDescriptors = 1; // we only have one constant buffer, so the range is only 1
+	// This below is super-important for some reason
+	descriptorTableRanges[0].BaseShaderRegister = 1; // start index of the shader registers in the range
+	descriptorTableRanges[0].RegisterSpace = 0; // space 0. can usually be zero
+	descriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // this appends the range to the end of the root signature descriptor tables
+
+	// create a descriptor table
+	D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable;
+	descriptorTable.NumDescriptorRanges = _countof(descriptorTableRanges); // we only have one range
+	descriptorTable.pDescriptorRanges = &descriptorTableRanges[0]; // the pointer to the beginning of our ranges array
+
+	D3D12_ROOT_PARAMETER rootParameters[2];
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
 	rootParameters[0].Constants.Num32BitValues = 16;
 	rootParameters[0].Constants.RegisterSpace = 0;
 	rootParameters[0].Constants.ShaderRegister = 0;
 	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
+	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[1].DescriptorTable = descriptorTable;
+	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
 	D3D12_ROOT_SIGNATURE_DESC myRootSignatureDesc;
-	myRootSignatureDesc.NumParameters = 1;
+	myRootSignatureDesc.NumParameters = ARRAYSIZE(rootParameters);
 	myRootSignatureDesc.pParameters = rootParameters;
 	myRootSignatureDesc.NumStaticSamplers = 0;
 	myRootSignatureDesc.pStaticSamplers = nullptr;
@@ -455,6 +502,8 @@ void RenderingContext::CreateVertexBuffer()
 
 	ThrowIfFailed(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc,
 		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&vertexBuffer)));
+	ThrowIfFailed(vertexBuffer->SetName(L"VertexBuffer"));
+
 
 	// Copy the triangle data to the vertex buffer.
 	UINT8* vertexBufferPointers;
@@ -518,6 +567,7 @@ void RenderingContext::CreateIndexBuffer()
 
 	ThrowIfFailed(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc,
 		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&indexBuffer)));
+	ThrowIfFailed(indexBuffer->SetName(L"IndexBuffer"));
 
 	// Copy the triangle data to the vertex buffer.
 	UINT8* indexBufferPointers;
@@ -530,6 +580,66 @@ void RenderingContext::CreateIndexBuffer()
 	indexBufferView.BufferLocation = indexBuffer->GetGPUVirtualAddress();
 	indexBufferView.SizeInBytes = 12 * 3 * 32;
 	indexBufferView.Format = DXGI_FORMAT_R32_UINT;
+}
+
+void RenderingContext::CreatePerObjectConstantBuffer()
+{
+	LOG_FUNC_NAME;
+
+	// So what we need is the Position, Rotation and Scale matrix. We can't push it through the Root Signature,
+	// because it is very limited in size and we would need that for every game object we want to render.
+
+	struct PerObjectData
+	{
+		DirectX::XMMATRIX worldMatrix;
+	};
+
+	PerObjectData perObjectData;
+
+	DirectX::XMMATRIX rotation = DirectX::XMMatrixRotationY(DirectX::XMConvertToRadians(0.0f));
+	DirectX::XMMATRIX scale = DirectX::XMMatrixScaling(1.0f, 2.0f, 1.0f);
+	DirectX::XMMATRIX translation = DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+	perObjectData.worldMatrix = translation * rotation * scale;
+
+	// Heap Description
+	D3D12_HEAP_PROPERTIES heapProperties;
+	ZeroMemory(&heapProperties, sizeof(heapProperties));
+	heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	
+	// Resource Description
+	D3D12_RESOURCE_DESC resourceDesc;
+	ZeroMemory(&resourceDesc, sizeof(resourceDesc));
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	resourceDesc.Alignment = 0;
+	resourceDesc.Width = (sizeof(PerObjectData) + 255) & ~255;    // CB size is required to be 256-byte aligned.
+	resourceDesc.Height = 1;
+	resourceDesc.DepthOrArraySize = 1;
+	resourceDesc.MipLevels = 1;
+	resourceDesc.Format = DXGI_FORMAT_UNKNOWN;
+	resourceDesc.SampleDesc.Count = 1;
+	resourceDesc.SampleDesc.Quality = 0;
+	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+	ThrowIfFailed(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&perObjectBuffer)));
+	ThrowIfFailed(perObjectBuffer->SetName(L"PerObjectBuffer"));
+
+	// Copy the data
+	// Copy the triangle data to the vertex buffer.
+	UINT8* constantBufferPointers;
+	CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
+	ThrowIfFailed(perObjectBuffer->Map(0, &readRange, reinterpret_cast<void**>(&constantBufferPointers)));
+	memcpy(constantBufferPointers, &perObjectData, sizeof(PerObjectData));
+	perObjectBuffer->Unmap(0, nullptr);
+
+	// Create Constant Buffer View
+	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+	cbvDesc.BufferLocation = perObjectBuffer->GetGPUVirtualAddress();
+	cbvDesc.SizeInBytes = (sizeof(PerObjectData) + 255) & ~255;    // CB size is required to be 256-byte aligned.
+	device->CreateConstantBufferView(&cbvDesc, cbvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
 void RenderingContext::CreateSynchronizationObjects()
@@ -550,6 +660,35 @@ void RenderingContext::CreateSynchronizationObjects()
 	// list in our main loop but for now, we just want to wait for setup to 
 	// complete before continuing.
 	WaitForThePreviousFrame();
+}
+
+void RenderingContext::UpdateRotation()
+{
+	angle += 1;
+	if (angle > 360)
+	{
+		angle = 0;
+	}
+
+	struct PerObjectData
+	{
+		DirectX::XMMATRIX worldMatrix;
+	};
+
+	PerObjectData perObjectData;
+
+	DirectX::XMMATRIX rotation = DirectX::XMMatrixRotationY(DirectX::XMConvertToRadians((float)angle));
+	DirectX::XMMATRIX scale = DirectX::XMMatrixScaling(1.0f, 2.0f, 1.0f);
+	DirectX::XMMATRIX translation = DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.0f);
+	perObjectData.worldMatrix = translation * rotation * scale;
+
+	// Copy the data
+	// Copy the triangle data to the vertex buffer.
+	UINT8* constantBufferPointers;
+	CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
+	ThrowIfFailed(perObjectBuffer->Map(0, &readRange, reinterpret_cast<void**>(&constantBufferPointers)));
+	memcpy(constantBufferPointers, &perObjectData, sizeof(PerObjectData));
+	perObjectBuffer->Unmap(0, nullptr);
 }
 
 void RenderingContext::RecordCommandList(float deltaTime)
@@ -580,6 +719,13 @@ void RenderingContext::RecordCommandList(float deltaTime)
 		rtvDescriptorHandle.ptr += SIZE_T(descriptorHandleIncrementSize);
 	}
 	commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+
+	// Handle Constant Buffer
+	// This works, but can't close the command list
+	ID3D12DescriptorHeap* descriptorHeaps[] = { cbvDescriptorHeap.Get() };
+	commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+	// The first parameter below is also super important
+	commandList->SetGraphicsRootDescriptorTable(1, cbvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
 	// Record the Clear Screen command on the Command List and Clear Depth Buffer
 	float clearColor[] = { 0.224f, 0.224f, 0.227f, 1.0f };
@@ -647,7 +793,8 @@ void RenderingContext::ExecuteCommandList()
 
 void RenderingContext::PresentFrame()
 {
-	ThrowIfFailed(swapChain->Present(1, 0));
+	// This sync interval... actually works! I'm not even sure how, since I didn't set refresh rate.
+	ThrowIfFailed(swapChain->Present(2, 0));
 }
 
 void RenderingContext::WaitForThePreviousFrame()
